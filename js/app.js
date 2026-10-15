@@ -12,11 +12,11 @@ const selectedDatetimeInput = document.getElementById("selected-datetime");
 
 let bloqueioTemporarioId = null;
 
-// Gerar código único alfanumérico (ex: BARB-8X92)
+// Gerar código único seguro e forte com letras (maiúsculas/minúsculas) e números
 function gerarCodigoUnico() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let codigo = "BARB-";
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 8; i++) {
         codigo += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return codigo;
@@ -278,8 +278,8 @@ function mostrarModalSucessoAgendamento(codigo, dataHora) {
     modal.innerHTML = `
         <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
             <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado!</h3>
-            <p>Guarde o seu <strong>Código Único</strong> para consultar, reagendar ou cancelar o seu horário:</p>
-            <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.4rem; font-weight:bold; margin:15px 0; letter-spacing:2px; color:#1a1a1a;" id="codigo-texto">${codigo}</div>
+            <p>Guarde o seu <strong>Código Único</strong> para consultar ou cancelar o seu horário:</p>
+            <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.2rem; font-weight:bold; margin:15px 0; letter-spacing:1px; color:#1a1a1a;" id="codigo-texto">${codigo}</div>
             <button id="btn-copiar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:10px;">Copiar Código</button>
             <button id="btn-fechar-modal" style="background:#ccc; color:#333; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; width:100%;">Fechar</button>
         </div>
@@ -297,20 +297,20 @@ function mostrarModalSucessoAgendamento(codigo, dataHora) {
     });
 }
 
-// Injetar secção para Gerenciar Agendamento (Reagendar / Cancelar com Código)
+// Injetar secção para Gerenciar Agendamento (Consultar / Cancelar com Código)
 function injetarSecaoGerenciarAgendamento() {
     const secaoAgendar = document.getElementById("agendar");
     if (!secaoAgendar || document.getElementById("gerenciar-agendamento-box")) return;
 
-    const divGerenciar = document.div = document.createElement("div");
+    const divGerenciar = document.createElement("div");
     divGerenciar.id = "gerenciar-agendamento-box";
     divGerenciar.style.cssText = "background:white; padding:25px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.1); max-width:900px; margin:30px auto 0 auto; border-top:4px solid #1a1a1a; text-align:center;";
     
     divGerenciar.innerHTML = `
         <h3 style="margin-top:0; color:#1a1a1a;">Já tem um agendamento?</h3>
-        <p style="color:#666; font-size:0.9rem;">Insira o seu <strong>Código Único</strong> para consultar, cancelar ou reagendar:</p>
+        <p style="color:#666; font-size:0.9rem;">Insira o seu <strong>Código Único</strong> para consultar ou cancelar:</p>
         <div style="display:flex; gap:10px; max-width:400px; margin:0 auto;">
-            <input type="text" id="input-codigo-busca" placeholder="Ex: BARB-1234" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px; text-transform:uppercase;">
+            <input type="text" id="input-codigo-busca" placeholder="Ex: BARB-8X92" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px;">
             <button id="btn-buscar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">Consultar</button>
         </div>
         <div id="resultado-busca-agendamento" style="margin-top:15px; text-align:left;"></div>
@@ -319,7 +319,7 @@ function injetarSecaoGerenciarAgendamento() {
     secaoAgendar.querySelector(".container").appendChild(divGerenciar);
 
     document.getElementById("btn-buscar-codigo").addEventListener("click", async () => {
-        const codigoBuscado = document.getElementById("input-codigo-busca").value.trim().toUpperCase();
+        const codigoBuscado = document.getElementById("input-codigo-busca").value.trim();
         const resultadoDiv = document.getElementById("resultado-busca-agendamento");
         
         if (!codigoBuscado) {
