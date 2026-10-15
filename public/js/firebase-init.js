@@ -3,14 +3,14 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebas
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import { getFirestore } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// Configuração do Firebase (Substitua pelos dados do seu projeto no console do Firebase)
+// Configuração do Firebase da Barbearia
 const firebaseConfig = {
-    apiKey: "SUA_API_KEY_AQUI",
-    authDomain: "seu-projeto.firebaseapp.com",
-    projectId: "seu-projeto",
-    storageBucket: "seu-projeto.appspot.com",
-    messagingSenderId: "SEU_SENDER_ID",
-    appId: "SEU_APP_ID"
+    apiKey: "AIzaSyArOjf26FUdsndR09hgDEjbijVU_nivseI",
+    authDomain: "barbearia-ae3da.firebaseapp.com",
+    projectId: "barbearia-ae3da",
+    storageBucket: "barbearia-ae3da.firebasestorage.app",
+    messagingSenderId: "1008253416467",
+    appId: "1:1008253416467:web:e44e111715975692c73be6"
 };
 
 // Inicializa o Firebase
