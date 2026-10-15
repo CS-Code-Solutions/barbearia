@@ -5,6 +5,7 @@ const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
 const parceirosCarrossel = document.getElementById("parceiros-carrossel");
 const pubServiceSelect = document.getElementById("pub-service-select");
+const pubBarberSelect = document.getElementById("pub-barber-select");
 const publicBookingForm = document.getElementById("public-booking-form");
 const historiaTexto = document.getElementById("historia-texto");
 const scheduleColumnsContainer = document.getElementById("schedule-columns");
@@ -12,7 +13,6 @@ const selectedDatetimeInput = document.getElementById("selected-datetime");
 
 let bloqueioTemporarioId = null;
 
-// Gerar código único seguro e forte com letras (maiúsculas/minúsculas) e números
 function gerarCodigoUnico() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
     let codigo = "BARB-";
@@ -22,7 +22,6 @@ function gerarCodigoUnico() {
     return codigo;
 }
 
-// Carregar Dados da Página ao Iniciar
 async function carregarPaginaPublica() {
     console.log("A carregar página pública...");
     if (historiaTexto) {
@@ -63,7 +62,21 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 2. Carregar Destaques
+    // 2. Carregar Barbeiros para o Select Público
+    try {
+        const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
+        if (pubBarberSelect) {
+            pubBarberSelect.innerHTML = '<option value="">Qualquer Barbeiro Disponível</option>';
+            barbeirosSnap.forEach(docItem => {
+                const b = docItem.data();
+                pubBarberSelect.innerHTML += `<option value="${b.nome}">${b.nome}</option>`;
+            });
+        }
+    } catch (e) {
+        console.error("Erro ao carregar barbeiros:", e);
+    }
+
+    // 3. Carregar Destaques
     try {
         const querySnapshot = await getDocs(collection(db, "destaques"));
         if (destaquesGrid && !querySnapshot.empty) {
@@ -83,7 +96,7 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar destaques:", e);
     }
 
-    // 3. Carregar Parceiros
+    // 4. Carregar Parceiros
     try {
         const querySnapshot = await getDocs(collection(db, "parceiros"));
         if (parceirosCarrossel && !querySnapshot.empty) {
@@ -139,7 +152,6 @@ function iniciarCalendarioSeguro() {
     }
 }
 
-// Construção visual das colunas de dias com os horários
 function construirColunasCalendario(ocupados, bloqueados) {
     if (!scheduleColumnsContainer) return;
     scheduleColumnsContainer.innerHTML = "";
@@ -221,13 +233,13 @@ async function selecionarHorario(dataHora, botaoElemento) {
     }
 }
 
-// Enviar Agendamento com Código Único e Modal de Cópia
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const clienteNome = document.getElementById("pub-client-name").value;
         const clienteTelefone = document.getElementById("pub-client-phone").value;
         const servicoId = pubServiceSelect.value;
+        const barbeiroNome = pubBarberSelect ? (pubBarberSelect.value || "Qualquer Barbeiro") : "Qualquer Barbeiro";
         const dataHora = selectedDatetimeInput ? selectedDatetimeInput.value : "";
 
         if (!dataHora) {
@@ -242,6 +254,7 @@ if (publicBookingForm) {
                 clienteNome,
                 clienteTelefone,
                 servicoId,
+                barbeiroNome,
                 dataHora,
                 codigoUnico,
                 status: "Confirmado",
@@ -254,7 +267,6 @@ if (publicBookingForm) {
                 bloqueioTemporarioId = null;
             }
 
-            // Exibir modal/alerta com o código único e botão de copiar
             mostrarModalSucessoAgendamento(codigoUnico, dataHora);
 
             publicBookingForm.reset();
@@ -297,7 +309,6 @@ function mostrarModalSucessoAgendamento(codigo, dataHora) {
     });
 }
 
-// Injetar secção para Gerenciar Agendamento (Consultar / Cancelar com Código)
 function injetarSecaoGerenciarAgendamento() {
     const secaoAgendar = document.getElementById("agendar");
     if (!secaoAgendar || document.getElementById("gerenciar-agendamento-box")) return;
@@ -345,6 +356,7 @@ function injetarSecaoGerenciarAgendamento() {
                 resultadoDiv.innerHTML = `
                     <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd;">
                         <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
+                        <p><strong>Barbeiro:</strong> ${agendamento.barbeiroNome || 'Qualquer'}</p>
                         <p><strong>Data/Hora Atual:</strong> ${agendamento.dataHora.replace('T', ' às ')}</p>
                         <p><strong>Estado:</strong> ${agendamento.status || 'Confirmado'}</p>
                         <div style="display:flex; gap:10px; margin-top:10px;">
