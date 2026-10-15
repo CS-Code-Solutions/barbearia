@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -199,7 +199,6 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
-// Seleção e Bloqueio Instantâneo com Verificação em Tempo Real
 async function selecionarHorario(dataHora, botaoElemento) {
     if (horariosOcupadosGlobal.includes(dataHora) || horariosBloqueadosGlobal.includes(dataHora)) {
         alert("Este horário acabou de ser ocupado por outro cliente.");
@@ -235,7 +234,7 @@ async function selecionarHorario(dataHora, botaoElemento) {
     }
 }
 
-// Submissão com Validação Segura
+// Submissão com ID Atómico Baseado no Horário (Impossibilita duplicidade)
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -258,8 +257,11 @@ if (publicBookingForm) {
 
         try {
             const codigoUnico = gerarCodigoUnico();
-
-            await addDoc(collection(db, "agendamentos"), {
+            
+            // Usamos o dataHora como ID do documento para garantir exclusividade absoluta a nível de hardware
+            const agendamentoDocRef = doc(db, "agendamentos", dataHora);
+            
+            await setDoc(agendamentoDocRef, {
                 clienteNome,
                 clienteTelefone,
                 servicoId,
@@ -272,8 +274,10 @@ if (publicBookingForm) {
             });
 
             if (bloqueioTemporarioId) {
-                await deleteDoc(doc(db, "bloqueiosTemporarios", bloqueioTemporarioId));
-                bloqueioTemporarioId = null;
+                try {
+                    await deleteDoc(doc(db, "bloqueiosTemporarios", bloqueioTemporarioId));
+                    bloqueioTemporarioId = null;
+                } catch (err) {}
             }
 
             mostrarModalSucessoAgendamento(codigoUnico, dataHora);
@@ -281,8 +285,9 @@ if (publicBookingForm) {
             if (selectedDatetimeInput) selectedDatetimeInput.value = "";
             carregarPaginaPublica();
         } catch (e) {
-            console.error("Erro ao agendar:", e);
-            alert("Erro ao realizar agendamento. Tente novamente.");
+            console.error("Conflito de agendamento detetado:", e);
+            alert("Este horário já foi agendado por outro cliente neste exato segundo. Por favor, escolha outro.");
+            carregarPaginaPublica();
         }
     });
 }
