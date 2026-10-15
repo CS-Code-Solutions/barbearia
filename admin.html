@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Administrativo - Barbearia</title>
-    <link rel="icon" type="image/png" href="Ico.png">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -13,7 +13,6 @@
             padding: 0;
             color: #333;
         }
-        /* Tela de Login Centralizada */
         #login-screen {
             display: flex;
             justify-content: center;
@@ -31,13 +30,12 @@
             text-align: center;
         }
         .login-card img {
-            max-width: 120px;
-            max-height: 80px;
-            border-radius: 0;
-            border: none;
-            object-fit: contain;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #d4af37;
             margin-bottom: 15px;
-            background: transparent;
         }
         .login-card h2 {
             margin-bottom: 20px;
@@ -69,7 +67,6 @@
             color: #1a1a1a;
         }
 
-        /* Painel Administrativo (Oculto até logar) */
         #admin-panel {
             display: none;
             padding: 20px;
@@ -85,6 +82,27 @@
             padding: 15px 25px;
             border-radius: 8px;
             margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .btn-live {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-live:hover {
+            background-color: #218838;
         }
         .btn-logout {
             background-color: #dc3545;
@@ -105,6 +123,33 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
+        .admin-section h3 {
+            margin-top: 0;
+            color: #1a1a1a;
+            border-bottom: 2px solid #d4af37;
+            padding-bottom: 8px;
+        }
+        form input, form textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 6px 0 12px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .btn-submit {
+            background-color: #1a1a1a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-submit:hover {
+            background-color: #d4af37;
+            color: #1a1a1a;
+        }
     </style>
 </head>
 <body>
@@ -112,7 +157,7 @@
     <!-- TELA DE LOGIN PROFISSIONAL -->
     <div id="login-screen">
         <div class="login-card">
-            <img src="Ico.png" alt="Logo Barbearia" onerror="this.style.display='none'">
+            <img src="logo.png" alt="Logo Barbearia" onerror="this.style.display='none'">
             <h2>Área Restrita</h2>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="E-mail do Administrador" required>
@@ -125,17 +170,61 @@
     <!-- PAINEL ADMINISTRATIVO -->
     <div id="admin-panel">
         <div class="admin-header">
-            <h2>Painel da Barbearia</h2>
-            <button id="logout-btn" class="btn-logout">Sair</button>
+            <div style="display:flex; align-items:center; gap:12px;">
+                <img src="logo.png" alt="Logo" style="width:35px; height:35px; border-radius:50%; object-fit:cover; border:1.5px solid #d4af37;" onerror="this.style.display='none'">
+                <h2 id="admin-welcome-title" style="margin:0; font-size:1.2rem;">Painel da Barbearia</h2>
+            </div>
+            <div class="header-actions">
+                <a href="live.html" target="_blank" class="btn-live">🖥️ Abrir Agenda em Tempo Real (Tela PC)</a>
+                <button id="logout-btn" class="btn-logout">Sair</button>
+            </div>
         </div>
 
+        <!-- CADASTRO DE BARBEIROS -->
+        <div class="admin-section" id="section-barbeiros">
+            <h3>Cadastrar Barbeiro e Permissões</h3>
+            <form id="barber-form">
+                <input type="text" id="barber-nome" placeholder="Nome do Barbeiro" required>
+                <input type="email" id="barber-email" placeholder="E-mail de Acesso" required>
+                <label style="display:block; margin:10px 0; font-size:0.9rem; cursor:pointer;">
+                    <input type="checkbox" id="barber-pode-editar" checked> Permitir que este barbeiro edite horários agendados
+                </label>
+                <button type="submit" class="btn-submit">Cadastrar Barbeiro</button>
+            </form>
+            <div id="admin-barbers-list" style="margin-top: 15px;">A carregar barbeiros...</div>
+        </div>
+
+        <!-- CADASTRO DE PARCEIROS E VÍDEOS -->
+        <div class="admin-section" id="section-parceiros">
+            <h3>Gerir Parceiros e Vídeos</h3>
+            <form id="partner-form">
+                <input type="text" id="part-nome" placeholder="Nome do Parceiro" required>
+                <input type="url" id="part-logo" placeholder="URL do Logótipo / Imagem" required>
+                <input type="url" id="part-video" placeholder="URL de Vídeo (Opcional - Link Embed do YouTube)" style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px;">
+                <button type="submit" class="btn-submit">Adicionar Parceiro</button>
+            </form>
+            <div id="admin-partners-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
+        </div>
+
+        <!-- CADASTRO DE DESTAQUES -->
+        <div class="admin-section" id="section-destaques">
+            <h3>Gerir Destaques</h3>
+            <form id="highlight-form">
+                <input type="text" id="high-titulo" placeholder="Título do Destaque" required>
+                <input type="url" id="high-img" placeholder="URL da Imagem do Destaque" required>
+                <textarea id="high-desc" placeholder="Descrição curta do destaque" rows="3" required style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+                <button type="submit" class="btn-submit">Adicionar Destaque</button>
+            </form>
+            <div id="admin-highlights-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
+        </div>
+
+        <!-- AGENDAMENTOS -->
         <div class="admin-section">
-            <h3>Gerenciamento de Agendamentos e Cadastros</h3>
-            <p>Bem-vindo ao painel administrativo. Aqui você pode gerenciar os serviços, ver agendamentos e configurar o sistema.</p>
+            <h3>Agendamentos Confirmados (Gestão e Edição)</h3>
+            <div id="admin-appointments-list">A carregar agendamentos...</div>
         </div>
     </div>
 
-    <!-- Script de autenticação e controle -->
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>
