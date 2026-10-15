@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -10,15 +10,20 @@ const historiaTexto = document.getElementById("historia-texto");
 
 // Carregar Dados da Página ao Iniciar
 async function carregarPaginaPublica() {
-    // 1. Carregar História (Exemplo fixo ou puxado do Firestore se tiver collection config)
+    // 1. História da Barbearia
     historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.";
 
-    // 2. Carregar Serviços
+    // 2. Carregar Serviços do Firestore
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         servicosGrid.innerHTML = "";
         pubServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
         
+        if (querySnapshot.empty) {
+            servicosGrid.innerHTML = "<p>Nenhum serviço cadastrado no momento.</p>";
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const s = doc.data();
             servicosGrid.innerHTML += `
@@ -31,13 +36,20 @@ async function carregarPaginaPublica() {
             pubServiceSelect.innerHTML += `<option value="${doc.id}">${s.nome} - R$ ${s.preco}</option>`;
         });
     } catch (e) {
-        servicosGrid.innerHTML = "<p>Cadastre os serviços pelo painel admin.</p>";
+        console.error("Erro ao carregar serviços:", e);
+        servicosGrid.innerHTML = "<p>Erro ao carregar serviços.</p>";
     }
 
-    // 3. Carregar Destaques
+    // 3. Carregar Destaques do Firestore
     try {
         const querySnapshot = await getDocs(collection(db, "destaques"));
         destaquesGrid.innerHTML = "";
+        
+        if (querySnapshot.empty) {
+            destaquesGrid.innerHTML = "<p>Nenhum destaque no momento.</p>";
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const d = doc.data();
             destaquesGrid.innerHTML += `
@@ -49,32 +61,39 @@ async function carregarPaginaPublica() {
             `;
         });
     } catch (e) {
-        destaquesGrid.innerHTML = "<p>Nenhum destaque no momento.</p>";
+        console.error("Erro ao carregar destaques:", e);
+        destaquesGrid.innerHTML = "<p>Erro ao carregar destaques.</p>";
     }
 
-    // 4. Carregar Parceiros e Vídeos
+    // 4. Carregar Parceiros e Vídeos do Firestore
     try {
         const querySnapshot = await getDocs(collection(db, "parceiros"));
         parceirosCarrossel.innerHTML = "";
+        
+        if (querySnapshot.empty) {
+            parceirosCarrossel.innerHTML = "<p>Nenhum parceiro cadastrado.</p>";
+            return;
+        }
+
         querySnapshot.forEach((doc) => {
             const p = doc.data();
-            // Suporte a vídeo incorporado (ex: YouTube ou link direto)
-            let videoElement = p.videoUrl ? `<iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe>` : "";
+            let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : "";
             
             parceirosCarrossel.innerHTML += `
-                <div class="carousel-item">
-                    <img src="${p.logoUrl}" alt="${p.nome}">
+                <div class="carousel-item card">
+                    <img src="${p.logoUrl || 'https://via.placeholder.com/150'}" alt="${p.nome}">
                     <h4>${p.nome}</h4>
                     ${videoElement}
                 </div>
             `;
         });
     } catch (e) {
-        parceirosCarrossel.innerHTML = "<p>Nenhum parceiro cadastrado.</p>";
+        console.error("Erro ao carregar parceiros:", e);
+        parceirosCarrossel.innerHTML = "<p>Erro ao carregar parceiros.</p>";
     }
 }
 
-// 5. Enviar Agendamento pelo Site (Origem: Site)
+// 5. Enviar Agendamento pelo Site (Registrando a origem como "Site")
 publicBookingForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const clienteNome = document.getElementById("pub-client-name").value;
@@ -88,7 +107,7 @@ publicBookingForm.addEventListener("submit", async (e) => {
             clienteTelefone,
             servicoId,
             dataHora,
-            origem: "Site", // <-- Registrado automaticamente como vindo do site!
+            origem: "Site", // Identifica automaticamente que veio pelo site
             criadoEm: new Date().toISOString()
         });
         alert("Agendamento realizado com sucesso! Aguardamos você.");
@@ -99,4 +118,5 @@ publicBookingForm.addEventListener("submit", async (e) => {
     }
 });
 
+// Executar carregamento ao abrir a página
 carregarPaginaPublica();
