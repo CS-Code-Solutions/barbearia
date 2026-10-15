@@ -11,27 +11,29 @@ const logoutBtn = document.getElementById("logout-btn");
 // Monitorizar autenticação e validar permissões diretamente no Firestore
 onAuthStateChanged(auth, async (user) => {
     if (user) {
-        const emailUtilizador = user.email;
+        const emailUtilizador = user.email ? user.email.trim().toLowerCase() : "";
 
         try {
             // Consultar a coleção de barbeiros/utilizadores no Firestore
             const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
             let autorizado = false;
-            let perfilUtilizador = "barbeiro";
+            let perfilUtilizador = "user";
             let podeEditarGlobal = false;
 
             barbeirosSnap.forEach(docItem => {
                 const b = docItem.data();
-                // Compara o e-mail autenticado via Google/Email com os cadastrados na base de dados
-                if (b.email && b.email.trim().toLowerCase() === emailUtilizador.trim().toLowerCase()) {
-                    autorizado = true;
-                    perfilUtilizador = b.perfil || "barbeiro";
-                    podeEditarGlobal = b.podeEditar || false;
+                if (b.email) {
+                    const emailCadastrado = String(b.email).trim().toLowerCase();
+                    if (emailCadastrado === emailUtilizador) {
+                        autorizado = true;
+                        perfilUtilizador = b.perfil ? String(b.perfil).trim().toLowerCase() : "user";
+                        podeEditarGlobal = Boolean(b.podeEditar);
+                    }
                 }
             });
 
             if (!autorizado) {
-                alert(`O e-mail (${emailUtilizador}) não está autorizado na base de dados para aceder ao painel.`);
+                alert(`O e-mail (${user.email}) não está autorizado na base de dados para aceder ao painel.`);
                 await signOut(auth);
                 return;
             }
@@ -90,7 +92,7 @@ if (logoutBtn) {
 function carregarPainelAdministrativo(isAdmin, podeEditarGlobal, user) {
     const painelContainer = document.getElementById("admin-panel");
     
-    // Ocultar ou mostrar secções restritas a administradores
+    // Ocultar ou mostrar secções restritas a administradores (Cadastro de utilizadores)
     const sectionBarbeiros = document.getElementById("section-barbeiros");
     if (sectionBarbeiros) {
         sectionBarbeiros.style.display = isAdmin ? "block" : "none";
@@ -144,7 +146,7 @@ async function carregarBarbeirosAdmin(isAdmin) {
             listContainer.innerHTML += `
                 <div style="background:#f8f9fa; padding:10px; margin-bottom:6px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <strong>${b.nome}</strong> (${b.email}) - <span style="text-transform:uppercase; font-size:0.8rem; background:#1a1a1a; color:white; padding:2px 6px; border-radius:3px;">${b.perfil || 'barbeiro'}</span><br>
+                        <strong>${b.nome}</strong> (${b.email}) - <span style="text-transform:uppercase; font-size:0.8rem; background:#1a1a1a; color:white; padding:2px 6px; border-radius:3px;">${b.perfil || 'user'}</span><br>
                         <small style="color:${b.podeEditar ? 'green' : 'red'};">${b.podeEditar ? '✔ Pode editar agendamentos' : '✖ Sem permissão de edição'}</small>
                     </div>
                     ${isAdmin ? `<button data-id="${docItem.id}" class="btn-del-barber" style="background:#dc3545; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Excluir</button>` : ''}
