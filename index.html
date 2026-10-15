@@ -22,7 +22,6 @@
             justify-content: space-between;
             align-items: center;
             padding: 1rem;
-            flex-wrap: wrap;
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -30,7 +29,7 @@
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         .circle-logo {
             width: 45px;
@@ -45,22 +44,21 @@
             margin: 0;
             color: #fff;
         }
-        .site-header nav {
+        
+        /* Menu de Navegação e Hamburguer */
+        .nav-links {
             display: flex;
             align-items: center;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin-top: 5px;
+            gap: 15px;
         }
-        .site-header nav a {
+        .nav-links a {
             color: #fff;
             text-decoration: none;
             font-size: 0.9rem;
             font-weight: bold;
-            padding: 5px 8px;
             transition: color 0.3s;
         }
-        .site-header nav a:hover {
+        .nav-links a:hover {
             color: #d4af37;
         }
         .btn-nav {
@@ -69,14 +67,49 @@
             padding: 6px 12px;
             border-radius: 4px;
         }
+        .hamburger {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.6rem;
+            cursor: pointer;
+        }
+
+        /* Responsividade para o Menu Mobile */
+        @media (max-width: 768px) {
+            .hamburger {
+                display: block;
+            }
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: #1a1a1a;
+                padding: 15px 0;
+                box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+                text-align: center;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .nav-links a {
+                padding: 10px 0;
+                width: 100%;
+            }
+        }
+
         .hero-section {
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), #1a1a1a;
             color: white;
             text-align: center;
-            padding: 100px 20px;
+            padding: 80px 20px;
         }
         .section {
-            padding: 60px 20px;
+            padding: 50px 20px;
         }
         .bg-alt {
             background-color: #e9ecef;
@@ -89,7 +122,7 @@
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
             gap: 20px;
-            margin-top: 30px;
+            margin-top: 20px;
         }
         .card {
             background: white;
@@ -97,6 +130,14 @@
             border-radius: 8px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
             text-align: center;
+        }
+        .empty-msg {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
         }
         .price {
             font-size: 1.2rem;
@@ -107,7 +148,7 @@
         }
         .form-container {
             background: white;
-            padding: 40px;
+            padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
             max-width: 900px;
@@ -162,7 +203,6 @@
             transition: all 0.2s;
             text-align: center;
         }
-        /* Verde: Disponível / Selecionável */
         .slot-btn.available {
             background-color: #28a745;
             color: white;
@@ -175,7 +215,6 @@
             color: #1a1a1a;
             border: 2px solid #1a1a1a;
         }
-        /* Cinza: Ocupado / Indisponível / Bloqueado */
         .slot-btn.busy {
             background-color: #6c757d;
             color: #fff;
@@ -213,7 +252,9 @@
             <img src="Ico.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
             <h1>Barbearia</h1>
         </div>
-        <nav>
+        <!-- Botão Menu Hamburguer para Telemóveis -->
+        <button class="hamburger" id="hamburger-btn">&#9776;</button>
+        <nav class="nav-links" id="nav-menu">
             <a href="#sobre">Nossa História</a>
             <a href="#servicos">Serviços</a>
             <a href="#destaques">Destaques</a>
@@ -233,21 +274,27 @@
     <section id="servicos" class="section">
         <div class="container">
             <h2>Nossos Serviços</h2>
-            <div id="servicos-grid" class="grid"></div>
+            <div id="servicos-grid" class="grid">
+                <div class="empty-msg">Nenhum serviço cadastrado no momento.</div>
+            </div>
         </div>
     </section>
 
     <section id="destaques" class="section bg-alt">
         <div class="container">
             <h2>Destaques</h2>
-            <div id="destaques-grid" class="grid"></div>
+            <div id="destaques-grid" class="grid">
+                <div class="empty-msg">Nenhum destaque cadastrado no momento.</div>
+            </div>
         </div>
     </section>
 
     <section id="parceiros" class="section">
         <div class="container">
             <h2>Nossos Parceiros</h2>
-            <div id="parceiros-carrossel" class="carousel"></div>
+            <div id="parceiros-carrossel" class="grid">
+                <div class="empty-msg">Nenhum parceiro cadastrado no momento.</div>
+            </div>
         </div>
     </section>
 
@@ -264,10 +311,7 @@
 
                 <label style="font-weight: bold; display: block; margin-top: 20px;">Escolha a Data e o Horário:</label>
                 
-                <!-- Container das Colunas de Datas e Horários -->
-                <div id="schedule-columns" class="schedule-columns-container">
-                    <!-- Preenchido via JavaScript em colunas -->
-                </div>
+                <div id="schedule-columns" class="schedule-columns-container"></div>
 
                 <input type="hidden" id="selected-datetime" required>
 
@@ -280,6 +324,16 @@
         <p>&copy; 2026 Barbearia. Todos os direitos reservados.</p>
     </footer>
 
+    <script>
+        // Script simples para abrir/fechar o menu hambúrguer no telemóvel
+        const hamburgerBtn = document.getElementById("hamburger-btn");
+        const navMenu = document.getElementById("nav-menu");
+        if (hamburgerBtn) {
+            hamburgerBtn.addEventListener("click", () => {
+                navMenu.classList.toggle("active");
+            });
+        }
+    </script>
     <script type="module" src="js/app.js"></script>
 </body>
 </html>
