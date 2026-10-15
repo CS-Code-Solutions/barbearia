@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Barbearia - Estilo e Tradição</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Cabeçalho / Menu -->
+    <header class="site-header">
+        <div class="logo-container">
+            <!-- Espaço para o seu logotipo circular -->
+            <img src="img/logo.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo">
+            <h1>Barbearia</h1>
+        </div>
+        <nav>
+            <a href="#sobre">Nossa História</a>
+            <a href="#servicos">Serviços</a>
+            <a href="#destaques">Destaques</a>
+            <a href="#parceiros">Parceiros</a>
+            <a href="#agendar" class="btn-nav">Agendar Horário</a>
+            <a href="admin.html" class="admin-link" target="_blank">Área Admin</a>
+        </nav>
+    </header>
+
+    <!-- Seção de Apresentação / História -->
+    <section id="sobre" class="hero-section">
+        <div class="container">
+            <h2>Tradição e Estilo</h2>
+            <p id="historia-texto">Carregando a nossa história...</p>
+        </div>
+    </section>
+
+    <!-- Seção de Serviços -->
+    <section id="servicos" class="section">
+        <div class="container">
+            <h2>Nossos Serviços</h2>
+            <div id="servicos-grid" class="grid">
+                <!-- Preenchido dinamicamente via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Destaques -->
+    <section id="destaques" class="section bg-alt">
+        <div class="container">
+            <h2>Destaques</h2>
+            <div id="destaques-grid" class="grid">
+                <!-- Preenchido dinamicamente via JS -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Parceiros com Carrossel / Vídeos -->
+    <section id="parceiros" class="section">
+        <div class="container">
+            <h2>Nossos Parceiros</h2>
+            <div id="parceiros-carrossel" class="carousel">
+                <!-- Os parceiros e vídeos aparecem aqui -->
+            </div>
+        </div>
+    </section>
+
+    <!-- Seção de Agendamento Online pelo Cliente -->
+    <section id="agendar" class="section bg-alt">
+        <div class="container form-container">
+            <h2>Agende seu Horário Online</h2>
+            <form id="public-booking-form">
+                <input type="text" id="pub-client-name" placeholder="Seu Nome Completo" required>
+                <input type="tel" id="pub-client-phone" placeholder="Seu WhatsApp / Telefone" required>
+                <select id="pub-service-select" required>
+                    <option value="">Selecione o Serviço</option>
+                </select>
+                <input type="datetime-local" id="pub-booking-date" required>
+                <button type="submit" class="btn-primary">Confirmar Agendamento</button>
+            </form>
+        </div>
+    </section>
+
+    <footer>
+        <p>&copy; 2026 Barbearia. Todos os direitos reservados.</p>
+    </footer>
+
+    <!-- Script Público -->
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
