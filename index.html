@@ -21,7 +21,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem 2rem;
+            padding: 1rem;
+            flex-wrap: wrap;
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -29,21 +30,34 @@
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
         .circle-logo {
-            width: 50px;
-            height: 50px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
             object-fit: cover;
             border: 2px solid #d4af37;
             background-color: #333;
         }
+        .site-header h1 {
+            font-size: 1.2rem;
+            margin: 0;
+            color: #fff;
+        }
+        .site-header nav {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
         .site-header nav a {
             color: #fff;
             text-decoration: none;
-            margin-left: 20px;
+            font-size: 0.9rem;
             font-weight: bold;
+            padding: 5px 8px;
             transition: color 0.3s;
         }
         .site-header nav a:hover {
@@ -52,7 +66,7 @@
         .btn-nav {
             background-color: #d4af37;
             color: #1a1a1a !important;
-            padding: 8px 15px;
+            padding: 6px 12px;
             border-radius: 4px;
         }
         .hero-section {
@@ -186,7 +200,6 @@
 <body>
     <header class="site-header">
         <div class="logo-container">
-            <!-- Utilizando Ico.png como logótipo -->
             <img src="Ico.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
             <h1>Barbearia</h1>
         </div>
@@ -195,8 +208,8 @@
             <a href="#servicos">Serviços</a>
             <a href="#destaques">Destaques</a>
             <a href="#parceiros">Parceiros</a>
-            <a href="#agendar" class="btn-nav">Agendar Horário</a>
-            <a href="admin.html" class="admin-link" target="_blank">Área Admin</a>
+            <a href="#agendar" class="btn-nav">Agendar</a>
+            <a href="admin.html" class="admin-link" target="_blank">Admin</a>
         </nav>
     </header>
 
@@ -210,31 +223,24 @@
     <section id="servicos" class="section">
         <div class="container">
             <h2>Nossos Serviços</h2>
-            <div id="servicos-grid" class="grid">
-                <!-- Preenchido dinamicamente via JS -->
-            </div>
+            <div id="servicos-grid" class="grid"></div>
         </div>
     </section>
 
     <section id="destaques" class="section bg-alt">
         <div class="container">
             <h2>Destaques</h2>
-            <div id="destaques-grid" class="grid">
-                <!-- Preenchido dinamicamente via JS -->
-            </div>
+            <div id="destaques-grid" class="grid"></div>
         </div>
     </section>
 
     <section id="parceiros" class="section">
         <div class="container">
             <h2>Nossos Parceiros</h2>
-            <div id="parceiros-carrossel" class="carousel">
-                <!-- Os parceiros e vídeos aparecem aqui -->
-            </div>
+            <div id="parceiros-carrossel" class="carousel"></div>
         </div>
     </section>
 
-    <!-- Seção de Agendamento com Calendário Visual de Dias e Horários -->
     <section id="agendar" class="section bg-alt">
         <div class="container form-container">
             <h2>Agende seu Horário Online</h2>
@@ -247,9 +253,7 @@
                 </select>
 
                 <label style="font-weight: bold; display: block; margin-top: 15px;">1. Escolha o Dia:</label>
-                <div id="calendar-days" class="calendar-days-grid">
-                    <!-- Gerado via JS -->
-                </div>
+                <div id="calendar-days" class="calendar-days-grid"></div>
                 <input type="hidden" id="selected-date" required>
 
                 <label style="font-weight: bold; display: block; margin-top: 15px;">2. Escolha o Horário:</label>
