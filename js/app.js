@@ -40,7 +40,7 @@ async function carregarPaginaPublica() {
         console.error("Erro ao criar serviços padrão:", e);
     }
 
-    // 2. Carregar Serviços para a Grid e para o Select
+    // 2. Carregar Serviços para a Grid e para o Select (Com compatibilidade total de nomes de campos)
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (servicosGrid) servicosGrid.innerHTML = "";
@@ -51,17 +51,24 @@ async function carregarPaginaPublica() {
         } else {
             querySnapshot.forEach((docItem) => {
                 const s = docItem.data();
+                
+                // Mapeia flexível para identificar o nome, descrição e preço independentemente de como foram gravados
+                const chaves = Object.keys(s);
+                const nomeServico = s.nome || s[chaves.find(k => k.toLowerCase().includes('corte') || k.toLowerCase().includes('nome'))] || "Serviço";
+                const descServico = s.descricao || s[chaves.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('moderno'))] || "Serviço de alta qualidade.";
+                const precoServico = s.preco || s[chaves.find(k => k.toLowerCase().includes('preco') || k.toLowerCase().includes('preço'))] || "40.00";
+
                 if (servicosGrid) {
                     servicosGrid.innerHTML += `
                         <div class="card">
-                            <h3>${s.nome}</h3>
-                            <p>${s.descricao || "Serviço de alta qualidade."}</p>
-                            <span class="price">R$ ${s.preco}</span>
+                            <h3>${nomeServico}</h3>
+                            <p>${descServico}</p>
+                            <span class="price">R$ ${precoServico}</span>
                         </div>
                     `;
                 }
                 if (pubServiceSelect) {
-                    pubServiceSelect.innerHTML += `<option value="${docItem.id}">${s.nome} - R$ ${s.preco}</option>`;
+                    pubServiceSelect.innerHTML += `<option value="${docItem.id}">${nomeServico} - R$ ${precoServico}</option>`;
                 }
             });
         }
