@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barbearia - Estilo e Tradição</title>
-    <link rel="icon" type="image/png" href="Ico.png">
+    <link rel="icon" type="image/png" href="logo.png">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -103,7 +103,7 @@
             background: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), #1a1a1a;
             color: white;
             text-align: center;
-            padding: 80px 20px;
+            padding: 60px 20px;
         }
         .section {
             padding: 50px 20px;
@@ -254,55 +254,21 @@
 <body>
     <header class="site-header">
         <div class="logo-container">
-            <img src="Ico.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
+            <img src="logo.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
             <h1>Barbearia</h1>
         </div>
         <button class="hamburger" id="hamburger-btn">&#9776;</button>
         <nav class="nav-links" id="nav-menu">
-            <a href="#sobre">Nossa História</a>
-            <a href="#servicos">Serviços</a>
+            <a href="#agendar" class="link-menu-agendar">Agendar</a>
+            <a href="#servicos" class="link-menu-servicos">Serviços</a>
             <a href="#destaques">Destaques</a>
             <a href="#parceiros">Parceiros</a>
-            <a href="#agendar" class="btn-nav">Agendar</a>
+            <a href="#sobre">Nossa História</a>
             <a href="admin.html" class="admin-link" target="_blank">Admin</a>
         </nav>
     </header>
 
-    <section id="sobre" class="hero-section">
-        <div class="container">
-            <h2>Tradição e Estilo</h2>
-            <p id="historia-texto">Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.</p>
-        </div>
-    </section>
-
-    <section id="servicos" class="section">
-        <div class="container">
-            <h2>Nossos Serviços</h2>
-            <div id="servicos-grid" class="grid">
-                <div class="empty-msg">Nenhum serviço cadastrado no momento.</div>
-            </div>
-        </div>
-    </section>
-
-    <section id="destaques" class="section bg-alt">
-        <div class="container">
-            <h2>Destaques</h2>
-            <div id="destaques-grid" class="grid">
-                <div class="empty-msg">Nenhum destaque cadastrado no momento.</div>
-            </div>
-        </div>
-    </section>
-
-    <section id="parceiros" class="section">
-        <div class="container">
-            <h2>Nossos Parceiros</h2>
-            <div id="parceiros-carrossel" class="grid">
-                <div class="empty-msg">Nenhum parceiro cadastrado no momento.</div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Seção de Agendamento em formato de Card -->
+    <!-- Seção de Agendamento no Topo -->
     <section id="agendar" class="section bg-alt">
         <div class="container">
             <div class="booking-card">
@@ -315,7 +281,6 @@
                         <option value="">Selecione o Serviço</option>
                     </select>
 
-                    <!-- Seleção de Barbeiro -->
                     <select id="pub-barber-select">
                         <option value="">Qualquer Barbeiro Disponível</option>
                     </select>
@@ -331,6 +296,42 @@
         </div>
     </section>
 
+    <!-- Seção de Nossos Serviços Oculta por padrão (visível apenas via menu) -->
+    <section id="servicos" class="section" style="display: none;">
+        <div class="container">
+            <h2>Nossos Serviços</h2>
+            <div id="servicos-grid" class="grid">
+                <div class="empty-msg">Nenhum serviço cadastrado no momento.</div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Destaques e Parceiros abaixo do agendamento -->
+    <section id="destaques" class="section">
+        <div class="container">
+            <h2>Destaques</h2>
+            <div id="destaques-grid" class="grid">
+                <div class="empty-msg">Nenhum destaque cadastrado no momento.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="parceiros" class="section bg-alt">
+        <div class="container">
+            <h2>Nossos Parceiros</h2>
+            <div id="parceiros-carrossel" class="grid">
+                <div class="empty-msg">Nenhum parceiro cadastrado no momento.</div>
+            </div>
+        </div>
+    </section>
+
+    <section id="sobre" class="hero-section">
+        <div class="container">
+            <h2>Tradição e Estilo</h2>
+            <p id="historia-texto">Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.</p>
+        </div>
+    </section>
+
     <footer>
         <p>&copy; 2026 Barbearia. Todos os direitos reservados.</p>
     </footer>
@@ -338,6 +339,7 @@
     <script>
         const hamburgerBtn = document.getElementById("hamburger-btn");
         const navMenu = document.getElementById("nav-menu");
+        const servicosSecao = document.getElementById("servicos");
 
         hamburgerBtn.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -348,6 +350,18 @@
             if (!navMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) {
                 navMenu.classList.remove("active");
             }
+        });
+
+        // Mostrar a secção de serviços apenas quando clicar no link do menu
+        document.querySelector(".link-menu-servicos").addEventListener("click", (e) => {
+            e.preventDefault();
+            servicosSecao.style.display = "block";
+            document.getElementById("servicos").scrollIntoView({ behavior: 'smooth' });
+            navMenu.classList.remove("active");
+        });
+
+        document.querySelector(".link-menu-agendar").addEventListener("click", () => {
+            navMenu.classList.remove("active");
         });
     </script>
     <script type="module" src="js/app.js"></script>
