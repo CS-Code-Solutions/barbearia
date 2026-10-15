@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -23,16 +23,15 @@ function gerarCodigoUnico() {
 }
 
 async function carregarPaginaPublica() {
-    console.log("A carregar página pública...");
     if (historiaTexto) {
         historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.";
     }
 
-    // 1. Carregar Serviços
+    // Carregar Serviços
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
-        if (servicosGrid) servicosGrid.innerHTML = "";
         if (pubServiceSelect) pubServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
+        if (servicosGrid) servicosGrid.innerHTML = "";
         
         if (querySnapshot.empty) {
             if (servicosGrid) servicosGrid.innerHTML = '<div class="empty-msg">Nenhum serviço cadastrado no momento.</div>';
@@ -62,7 +61,7 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 2. Carregar Barbeiros para o Select Público
+    // Carregar Barbeiros
     try {
         const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
         if (pubBarberSelect) {
@@ -76,12 +75,12 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar barbeiros:", e);
     }
 
-    // 3. Carregar Destaques
+    // Carregar Destaques e Parceiros
     try {
-        const querySnapshot = await getDocs(collection(db, "destaques"));
-        if (destaquesGrid && !querySnapshot.empty) {
+        const queryDestaques = await getDocs(collection(db, "destaques"));
+        if (destaquesGrid && !queryDestaques.empty) {
             destaquesGrid.innerHTML = "";
-            querySnapshot.forEach((docItem) => {
+            queryDestaques.forEach((docItem) => {
                 const d = docItem.data();
                 destaquesGrid.innerHTML += `
                     <div class="card highlight-card">
@@ -92,19 +91,15 @@ async function carregarPaginaPublica() {
                 `;
             });
         }
-    } catch (e) {
-        console.error("Erro ao carregar destaques:", e);
-    }
+    } catch (e) {}
 
-    // 4. Carregar Parceiros
     try {
-        const querySnapshot = await getDocs(collection(db, "parceiros"));
-        if (parceirosCarrossel && !querySnapshot.empty) {
+        const queryParceiros = await getDocs(collection(db, "parceiros"));
+        if (parceirosCarrossel && !queryParceiros.empty) {
             parceirosCarrossel.innerHTML = "";
-            querySnapshot.forEach((docItem) => {
+            queryParceiros.forEach((docItem) => {
                 const p = docItem.data();
                 let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : "";
-                
                 parceirosCarrossel.innerHTML += `
                     <div class="carousel-item card">
                         <img src="${p.logoUrl || 'https://via.placeholder.com/150'}" alt="${p.nome}">
@@ -114,15 +109,14 @@ async function carregarPaginaPublica() {
                 `;
             });
         }
-    } catch (e) {
-        console.error("Erro ao carregar parceiros:", e);
-    }
+    } catch (e) {}
 
-    iniciarCalendarioSeguro();
+    iniciarCalendarioTempoReal();
     injetarSecaoGerenciarAgendamento();
 }
 
-function iniciarCalendarioSeguro() {
+// Sincronização Milisecundária em Tempo Real
+function iniciarCalendarioTempoReal() {
     try {
         onSnapshot(collection(db, "agendamentos"), (snapshotAgendamentos) => {
             const agendamentosOcupados = [];
@@ -204,6 +198,7 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
+// Bloqueio Instantâneo de 2 Minutos ao Clicar
 async function selecionarHorario(dataHora, botaoElemento) {
     document.querySelectorAll(".slot-btn").forEach(b => {
         if (!b.classList.contains("busy")) b.classList.add("available");
@@ -217,11 +212,11 @@ async function selecionarHorario(dataHora, botaoElemento) {
     if (bloqueioTemporarioId) {
         try {
             await deleteDoc(doc(db, "bloqueiosTemporarios", bloqueioTemporarioId));
-        } catch (e) { console.log(e); }
+        } catch (e) {}
     }
 
     try {
-        const expiraEm = new Date().getTime() + 120000; 
+        const expiraEm = new Date().getTime() + 120000; // 2 minutos
         const docRef = await addDoc(collection(db, "bloqueiosTemporarios"), {
             dataHora: dataHora,
             expiraEm: expiraEm,
@@ -229,10 +224,11 @@ async function selecionarHorario(dataHora, botaoElemento) {
         });
         bloqueioTemporarioId = docRef.id;
     } catch (e) {
-        console.error("Erro ao bloquear horário:", e);
+        console.error("Erro ao bloquear temporariamente:", e);
     }
 }
 
+// Submissão com Validação Atómica Final
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -247,9 +243,19 @@ if (publicBookingForm) {
             return;
         }
 
-        const codigoUnico = gerarCodigoUnico();
-
+        // Verificação final atómica antes de confirmar
         try {
+            const qAgendados = query(collection(db, "agendamentos"), where("dataHora", "==", dataHora), where("status", "!=", "Cancelado"));
+            const snapAgendados = await getDocs(qAgendados);
+            
+            if (!snapAgendados.empty) {
+                alert("Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro.");
+                carregarPaginaPublica();
+                return;
+            }
+
+            const codigoUnico = gerarCodigoUnico();
+
             await addDoc(collection(db, "agendamentos"), {
                 clienteNome,
                 clienteTelefone,
@@ -268,12 +274,11 @@ if (publicBookingForm) {
             }
 
             mostrarModalSucessoAgendamento(codigoUnico, dataHora);
-
             publicBookingForm.reset();
             if (selectedDatetimeInput) selectedDatetimeInput.value = "";
             carregarPaginaPublica();
         } catch (e) {
-            console.error("Erro ao agendar:", e);
+            console.error("Erro ao validar/agendar:", e);
             alert("Erro ao realizar agendamento. Tente novamente.");
         }
     });
@@ -291,7 +296,7 @@ function mostrarModalSucessoAgendamento(codigo, dataHora) {
         <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
             <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado!</h3>
             <p>Guarde o seu <strong>Código Único</strong> para consultar ou cancelar o seu horário:</p>
-            <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.2rem; font-weight:bold; margin:15px 0; letter-spacing:1px; color:#1a1a1a;" id="codigo-texto">${codigo}</div>
+            <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.2rem; font-weight:bold; margin:15px 0; letter-spacing:1px; color:#1a1a1a;">${codigo}</div>
             <button id="btn-copiar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:10px;">Copiar Código</button>
             <button id="btn-fechar-modal" style="background:#ccc; color:#333; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; width:100%;">Fechar</button>
         </div>
