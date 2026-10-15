@@ -4,63 +4,137 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Administrativo - Barbearia</title>
-    <link rel="stylesheet" href="css/admin.css">
+    <link rel="icon" type="image/png" href="Ico.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+            color: #333;
+        }
+        /* Tela de Login Centralizada */
+        #login-screen {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), #1a1a1a;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card img {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 2px solid #d4af37;
+            object-fit: cover;
+            margin-bottom: 15px;
+            background-color: #333;
+        }
+        .login-card h2 {
+            margin-bottom: 20px;
+            color: #1a1a1a;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+        .login-card button {
+            background-color: #1a1a1a;
+            color: #fff;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background 0.3s;
+        }
+        .login-card button:hover {
+            background-color: #d4af37;
+            color: #1a1a1a;
+        }
+
+        /* Painel Administrativo (Oculto até logar) */
+        #admin-panel {
+            display: none;
+            padding: 20px;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1a1a1a;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+        }
+        .btn-logout {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-logout:hover {
+            background-color: #c82333;
+        }
+        .admin-section {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body>
-    <!-- Tela de Login -->
-    <div id="login-screen" class="screen">
-        <div class="login-box">
-            <h2>Área Restrita - Barbearia</h2>
+
+    <!-- TELA DE LOGIN PROFISSIONAL -->
+    <div id="login-screen">
+        <div class="login-card">
+            <img src="Ico.png" alt="Logo Barbearia" onerror="this.style.display='none'">
+            <h2>Área Restrita</h2>
             <form id="login-form">
-                <input type="email" id="login-email" placeholder="E-mail" required>
+                <input type="email" id="login-email" placeholder="E-mail do Administrador" required>
                 <input type="password" id="login-password" placeholder="Senha" required>
-                <button type="submit">Entrar</button>
+                <button type="submit">Entrar no Painel</button>
             </form>
-            <p id="login-error" class="error"></p>
         </div>
     </div>
 
-    <!-- Painel Principal (Oculto até logar) -->
-    <div id="admin-dashboard" class="screen" style="display: none;">
-        <header>
-            <h1>Gestão da Barbearia</h1>
-            <button id="logout-btn">Sair</button>
-        </header>
+    <!-- PAINEL ADMINISTRATIVO -->
+    <div id="admin-panel">
+        <div class="admin-header">
+            <h2>Painel da Barbearia</h2>
+            <button id="logout-btn" class="btn-logout">Sair</button>
+        </div>
 
-        <main>
-            <section class="admin-section">
-                <h2>Adicionar Agendamento Manual</h2>
-                <form id="manual-booking-form">
-                    <input type="text" id="client-name" placeholder="Nome do Cliente" required>
-                    <input type="tel" id="client-phone" placeholder="Telefone" required>
-                    <select id="service-select" required>
-                        <!-- Preenchido via JavaScript -->
-                    </select>
-                    <input type="datetime-local" id="booking-date" required>
-                    
-                    <!-- Campo de Origem pedido por você -->
-                    <select id="booking-origin" required>
-                        <option value="WhatsApp">WhatsApp</option>
-                        <option value="Telefone">Telefone</option>
-                        <option value="Presencial">Presencial</option>
-                        <option value="Instagram">Instagram</option>
-                        <option value="Site">Site</option>
-                    </select>
-                    
-                    <button type="submit">Salvar Agendamento</button>
-                </form>
-            </section>
-
-            <section class="admin-section">
-                <h2>Agenda em Tempo Real</h2>
-                <div id="appointments-list">
-                    <!-- Os agendamentos do Firestore aparecem aqui em tempo real -->
-                </div>
-            </section>
-        </main>
+        <div class="admin-section">
+            <h3>Gerenciamento de Agendamentos e Cadastros</h3>
+            <p>Bem-vindo ao painel administrativo. Aqui você pode gerenciar os serviços, ver agendamentos e configurar o sistema.</p>
+        </div>
     </div>
 
-    <!-- Script principal do Admin (Modular) -->
+    <!-- Script de autenticação e controle -->
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>
