@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barbearia - Estilo e Tradição</title>
-    <!-- Favicon com Ico.png -->
     <link rel="icon" type="image/png" href="Ico.png">
     <style>
         body {
@@ -76,7 +75,6 @@
             cursor: pointer;
         }
 
-        /* Responsividade para o Menu Mobile */
         @media (max-width: 768px) {
             .hamburger {
                 display: block;
@@ -146,24 +144,32 @@
             display: block;
             margin-top: 10px;
         }
-        .form-container {
+        
+        /* Agendamento em formato de Card refinado */
+        .booking-card {
             background: white;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.1);
             max-width: 900px;
             margin: 0 auto;
+            border-top: 4px solid #d4af37;
+        }
+        .booking-card h2 {
+            margin-top: 0;
+            color: #1a1a1a;
+            text-align: center;
+            margin-bottom: 25px;
         }
         form input, form select {
             width: 100%;
             padding: 12px;
             margin: 10px 0;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
         }
         
-        /* Layout em Colunas Verticais Estilo Calendário */
         .schedule-columns-container {
             display: flex;
             gap: 15px;
@@ -225,13 +231,14 @@
         .btn-primary {
             background-color: #1a1a1a;
             color: white;
-            padding: 12px;
+            padding: 14px;
             width: 100%;
             border: none;
-            border-radius: 4px;
+            border-radius: 6px;
             font-weight: bold;
             cursor: pointer;
             margin-top: 20px;
+            font-size: 1rem;
         }
         .btn-primary:hover {
             background-color: #d4af37;
@@ -252,7 +259,6 @@
             <img src="Ico.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
             <h1>Barbearia</h1>
         </div>
-        <!-- Botão Menu Hamburguer para Telemóveis -->
         <button class="hamburger" id="hamburger-btn">&#9776;</button>
         <nav class="nav-links" id="nav-menu">
             <a href="#sobre">Nossa História</a>
@@ -298,25 +304,27 @@
         </div>
     </section>
 
+    <!-- Seção de Agendamento em formato de Card -->
     <section id="agendar" class="section bg-alt">
-        <div class="container form-container">
-            <h2>Agende seu Horário Online</h2>
-            <form id="public-booking-form">
-                <input type="text" id="pub-client-name" placeholder="Seu Nome Completo" required>
-                <input type="tel" id="pub-client-phone" placeholder="Seu WhatsApp / Telefone" required>
-                
-                <select id="pub-service-select" required>
-                    <option value="">Selecione o Serviço</option>
-                </select>
+        <div class="container">
+            <div class="booking-card">
+                <h2>Agende seu Horário Online</h2>
+                <form id="public-booking-form">
+                    <input type="text" id="pub-client-name" placeholder="Seu Nome Completo" required>
+                    <input type="tel" id="pub-client-phone" placeholder="Seu WhatsApp / Telefone" required>
+                    
+                    <select id="pub-service-select" required>
+                        <option value="">Selecione o Serviço</option>
+                    </select>
 
-                <label style="font-weight: bold; display: block; margin-top: 20px;">Escolha a Data e o Horário:</label>
-                
-                <div id="schedule-columns" class="schedule-columns-container"></div>
+                    <label style="font-weight: bold; display: block; margin-top: 20px;">Escolha a Data e o Horário:</label>
+                    <div id="schedule-columns" class="schedule-columns-container"></div>
 
-                <input type="hidden" id="selected-datetime" required>
+                    <input type="hidden" id="selected-datetime" required>
 
-                <button type="submit" class="btn-primary">Confirmar Agendamento</button>
-            </form>
+                    <button type="submit" class="btn-primary">Confirmar Agendamento</button>
+                </form>
+            </div>
         </div>
     </section>
 
@@ -325,14 +333,21 @@
     </footer>
 
     <script>
-        // Script simples para abrir/fechar o menu hambúrguer no telemóvel
+        // Lógica do menu hambúrguer e fechar ao clicar fora
         const hamburgerBtn = document.getElementById("hamburger-btn");
         const navMenu = document.getElementById("nav-menu");
-        if (hamburgerBtn) {
-            hamburgerBtn.addEventListener("click", () => {
-                navMenu.classList.toggle("active");
-            });
-        }
+
+        hamburgerBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            navMenu.classList.toggle("active");
+        });
+
+        // Fechar menu ao clicar em qualquer lugar fora dele
+        document.addEventListener("click", (e) => {
+            if (!navMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+                navMenu.classList.remove("active");
+            }
+        });
     </script>
     <script type="module" src="js/app.js"></script>
 </body>
