@@ -66,6 +66,14 @@
             background-color: #d4af37;
             color: #1a1a1a;
         }
+        .btn-google {
+            background-color: #db4437 !important;
+            margin-top: 15px !important;
+        }
+        .btn-google:hover {
+            background-color: #c23321 !important;
+            color: white !important;
+        }
 
         #admin-panel {
             display: none;
@@ -129,7 +137,7 @@
             border-bottom: 2px solid #d4af37;
             padding-bottom: 8px;
         }
-        form input, form textarea {
+        form input, form textarea, form select {
             width: 100%;
             padding: 10px;
             margin: 6px 0 12px 0;
@@ -154,7 +162,7 @@
 </head>
 <body>
 
-    <!-- TELA DE LOGIN PROFISSIONAL -->
+    <!-- TELA DE LOGIN COM GOOGLE E EMAIL -->
     <div id="login-screen">
         <div class="login-card">
             <img src="logo.png" alt="Logo Barbearia" onerror="this.style.display='none'">
@@ -162,8 +170,10 @@
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="E-mail do Administrador" required>
                 <input type="password" id="login-password" placeholder="Senha" required>
-                <button type="submit">Entrar no Painel</button>
+                <button type="submit">Entrar com E-mail</button>
             </form>
+            <hr style="margin: 20px 0; border:0; border-top:1px solid #ddd;">
+            <button type="button" id="btn-google-login" class="btn-google">Entrar com a Conta Google</button>
         </div>
     </div>
 
@@ -180,39 +190,43 @@
             </div>
         </div>
 
-        <!-- CADASTRO DE BARBEIROS -->
+        <!-- CADASTRO DE UTILIZADORES / BARBEIROS E PERMISSÕES -->
         <div class="admin-section" id="section-barbeiros">
-            <h3>Cadastrar Barbeiro e Permissões</h3>
+            <h3>Cadastrar Utilizador / Barbeiro Autorizado</h3>
             <form id="barber-form">
-                <input type="text" id="barber-nome" placeholder="Nome do Barbeiro" required>
-                <input type="email" id="barber-email" placeholder="E-mail de Acesso" required>
+                <input type="text" id="barber-nome" placeholder="Nome Completo" required>
+                <input type="email" id="barber-email" placeholder="E-mail Google Autorizado para Login" required>
+                <select id="barber-perfil" required style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px;">
+                    <option value="barbeiro">Barbeiro (Restrito)</option>
+                    <option value="admin">Administrador (Acesso Total)</option>
+                </select>
                 <label style="display:block; margin:10px 0; font-size:0.9rem; cursor:pointer;">
-                    <input type="checkbox" id="barber-pode-editar" checked> Permitir que este barbeiro edite horários agendados
+                    <input type="checkbox" id="barber-pode-editar" checked> Permitir edição de horários agendados
                 </label>
-                <button type="submit" class="btn-submit">Cadastrar Barbeiro</button>
+                <button type="submit" class="btn-submit">Salvar Utilizador Autorizado</button>
             </form>
-            <div id="admin-barbers-list" style="margin-top: 15px;">A carregar barbeiros...</div>
+            <div id="admin-barbers-list" style="margin-top: 15px;">A carregar utilizadores...</div>
         </div>
 
         <!-- CADASTRO DE PARCEIROS E VÍDEOS -->
-        <div class="admin-section" id="section-parceiros">
+        <div class="admin-section">
             <h3>Gerir Parceiros e Vídeos</h3>
             <form id="partner-form">
                 <input type="text" id="part-nome" placeholder="Nome do Parceiro" required>
                 <input type="url" id="part-logo" placeholder="URL do Logótipo / Imagem" required>
-                <input type="url" id="part-video" placeholder="URL de Vídeo (Opcional - Link Embed do YouTube)" style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px;">
+                <input type="url" id="part-video" placeholder="URL de Vídeo (Opcional - Link Embed do YouTube)">
                 <button type="submit" class="btn-submit">Adicionar Parceiro</button>
             </form>
             <div id="admin-partners-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
         <!-- CADASTRO DE DESTAQUES -->
-        <div class="admin-section" id="section-destaques">
+        <div class="admin-section">
             <h3>Gerir Destaques</h3>
             <form id="highlight-form">
                 <input type="text" id="high-titulo" placeholder="Título do Destaque" required>
                 <input type="url" id="high-img" placeholder="URL da Imagem do Destaque" required>
-                <textarea id="high-desc" placeholder="Descrição curta do destaque" rows="3" required style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px; box-sizing:border-box;"></textarea>
+                <textarea id="high-desc" placeholder="Descrição curta do destaque" rows="3" required></textarea>
                 <button type="submit" class="btn-submit">Adicionar Destaque</button>
             </form>
             <div id="admin-highlights-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
