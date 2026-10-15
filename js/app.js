@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -115,7 +115,6 @@ async function carregarPaginaPublica() {
     injetarSecaoGerenciarAgendamento();
 }
 
-// Sincronização Milisecundária em Tempo Real
 function iniciarCalendarioTempoReal() {
     try {
         onSnapshot(collection(db, "agendamentos"), (snapshotAgendamentos) => {
@@ -187,7 +186,7 @@ function construirColunasCalendario(ocupados, bloqueados) {
                 btn.disabled = true;
             } else {
                 btn.className = "slot-btn available";
-                btn.addEventListener("click", () => selecionarHorario(dataHoraCompleta, btn));
+                btn.addEventListener("click", () => selecionarHorarioComVerificacao(dataHoraCompleta, btn));
             }
 
             list.appendChild(btn);
@@ -198,24 +197,47 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
-// Bloqueio Instantâneo de 2 Minutos ao Clicar
-async function selecionarHorario(dataHora, botaoElemento) {
-    document.querySelectorAll(".slot-btn").forEach(b => {
-        if (!b.classList.contains("busy")) b.classList.add("available");
-        b.classList.remove("selected");
-    });
-
-    botaoElemento.classList.remove("available");
-    botaoElemento.classList.add("selected");
-    if (selectedDatetimeInput) selectedDatetimeInput.value = dataHora;
-
-    if (bloqueioTemporarioId) {
-        try {
-            await deleteDoc(doc(db, "bloqueiosTemporarios", bloqueioTemporarioId));
-        } catch (e) {}
-    }
-
+// Verificação milisecundária de disponibilidade antes de aplicar o bloqueio
+async function selecionarHorarioComVerificacao(dataHora, botaoElemento) {
     try {
+        // 1. Checar agendamentos ativos na base de dados
+        const qAgendados = query(collection(db, "agendamentos"), where("dataHora", "==", dataHora), where("status", "!=", "Cancelado"));
+        const snapAgendados = await getDocs(qAgendados);
+
+        // 2. Checar bloqueios temporários ativos na base de dados
+        const agora = new Date().getTime();
+        const qBloqueios = query(collection(db, "bloqueiosTemporarios"), where("dataHora", "==", dataHora));
+        const snapBloqueios = await getDocs(qBloqueios);
+        
+        let bloqueioAtivo = false;
+        snapBloqueios.forEach(d => {
+            if (d.data().expiraEm && d.data().expiraEm > agora) {
+                bloqueioAtivo = true;
+            }
+        });
+
+        if (!snapAgendados.empty || bloqueioAtivo) {
+            alert("Este horário acabou de ser selecionado ou ocupado por outro cliente.");
+            carregarPaginaPublica();
+            return;
+        }
+
+        // Se estiver livre, prosseguir com a seleção e bloqueio imediato de 2 minutos
+        document.querySelectorAll(".slot-btn").forEach(b => {
+            if (!b.classList.contains("busy")) b.classList.add("available");
+            b.classList.remove("selected");
+        });
+
+        botaoElemento.classList.remove("available");
+        botaoElemento.classList.add("selected");
+        if (selectedDatetimeInput) selectedDatetimeInput.value = dataHora;
+
+        if (bloqueioTemporarioId) {
+            try {
+                await deleteDoc(doc(db, "bloqueiosTemporarios", bloqueioTemporarioId));
+            } catch (e) {}
+        }
+
         const expiraEm = new Date().getTime() + 120000; // 2 minutos
         const docRef = await addDoc(collection(db, "bloqueiosTemporarios"), {
             dataHora: dataHora,
@@ -223,12 +245,14 @@ async function selecionarHorario(dataHora, botaoElemento) {
             criadoEm: serverTimestamp()
         });
         bloqueioTemporarioId = docRef.id;
+
     } catch (e) {
-        console.error("Erro ao bloquear temporariamente:", e);
+        console.error("Erro na verificação de disponibilidade:", e);
+        alert("Erro ao validar horário. Tente novamente.");
     }
 }
 
-// Submissão com Validação Atómica Final
+// Submissão com Dupla Validação Atómica Final
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -243,13 +267,13 @@ if (publicBookingForm) {
             return;
         }
 
-        // Verificação final atómica antes de confirmar
         try {
+            // Leitura de segurança milisecundária antes de gravar definitivamente
             const qAgendados = query(collection(db, "agendamentos"), where("dataHora", "==", dataHora), where("status", "!=", "Cancelado"));
             const snapAgendados = await getDocs(qAgendados);
             
             if (!snapAgendados.empty) {
-                alert("Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro.");
+                alert("Atenção: Este horário foi ocupado por outro cliente segundos atrás. Escolha outro horário.");
                 carregarPaginaPublica();
                 return;
             }
