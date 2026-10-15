@@ -19,14 +19,35 @@ async function carregarPaginaPublica() {
         historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.";
     }
 
-    // 1. Carregar Serviços
+    // 1. Verificar e criar serviços iniciais se a coleção estiver vazia
+    try {
+        const servicosRef = collection(db, "servicos");
+        const snapshotInicial = await getDocs(servicosRef);
+        
+        if (snapshotInicial.empty) {
+            const servicosIniciais = [
+                { nome: "Corte de Cabelo", descricao: "Corte moderno ou clássico com acabamento na navalha", preco: "40.00" },
+                { nome: "Corte de Barba", descricao: "Barba alinhada com toalha quentinha e produtos especiais", preco: "30.00" },
+                { nome: "Corte de Cabelo e Barba", descricao: "Combo completo para renovar o visual com estilo", preco: "60.00" }
+            ];
+
+            for (let s of servicosIniciais) {
+                await addDoc(servicosRef, s);
+            }
+            console.log("Serviços iniciais criados com sucesso!");
+        }
+    } catch (e) {
+        console.error("Erro ao criar serviços padrão:", e);
+    }
+
+    // 2. Carregar Serviços para a Grid e para o Select
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (servicosGrid) servicosGrid.innerHTML = "";
         if (pubServiceSelect) pubServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
         
         if (querySnapshot.empty) {
-            if (servicosGrid) servicosGrid.innerHTML = "<p>Nenhum serviço cadastrado.</p>";
+            if (servicosGrid) servicosGrid.innerHTML = '<div class="empty-msg">Nenhum serviço cadastrado no momento.</div>';
         } else {
             querySnapshot.forEach((docItem) => {
                 const s = docItem.data();
@@ -48,13 +69,13 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 2. Carregar Destaques
+    // 3. Carregar Destaques
     try {
         const querySnapshot = await getDocs(collection(db, "destaques"));
-        if (destaquesGrid) destaquesGrid.innerHTML = "";
-        querySnapshot.forEach((docItem) => {
-            const d = docItem.data();
-            if (destaquesGrid) {
+        if (destaquesGrid && !querySnapshot.empty) {
+            destaquesGrid.innerHTML = "";
+            querySnapshot.forEach((docItem) => {
+                const d = docItem.data();
                 destaquesGrid.innerHTML += `
                     <div class="card highlight-card">
                         <img src="${d.imagemUrl || 'https://via.placeholder.com/300'}" alt="${d.titulo}">
@@ -62,21 +83,21 @@ async function carregarPaginaPublica() {
                         <p>${d.descricao}</p>
                     </div>
                 `;
-            }
-        });
+            });
+        }
     } catch (e) {
         console.error("Erro ao carregar destaques:", e);
     }
 
-    // 3. Carregar Parceiros
+    // 4. Carregar Parceiros
     try {
         const querySnapshot = await getDocs(collection(db, "parceiros"));
-        if (parceirosCarrossel) parceirosCarrossel.innerHTML = "";
-        querySnapshot.forEach((docItem) => {
-            const p = docItem.data();
-            let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : "";
-            
-            if (parceirosCarrossel) {
+        if (parceirosCarrossel && !querySnapshot.empty) {
+            parceirosCarrossel.innerHTML = "";
+            querySnapshot.forEach((docItem) => {
+                const p = docItem.data();
+                let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : "";
+                
                 parceirosCarrossel.innerHTML += `
                     <div class="carousel-item card">
                         <img src="${p.logoUrl || 'https://via.placeholder.com/150'}" alt="${p.nome}">
@@ -84,19 +105,18 @@ async function carregarPaginaPublica() {
                         ${videoElement}
                     </div>
                 `;
-            }
-        });
+            });
+        }
     } catch (e) {
         console.error("Erro ao carregar parceiros:", e);
     }
 
-    // 4. Montar o Calendário em Colunas (mesmo se falhar o Firestore, renderiza os horários locais)
+    // 5. Iniciar Calendário em Colunas
     iniciarCalendarioSeguro();
 }
 
 function iniciarCalendarioSeguro() {
     try {
-        // Tentar monitorar com Firestore em tempo real
         onSnapshot(collection(db, "agendamentos"), (snapshotAgendamentos) => {
             const agendamentosOcupados = [];
             snapshotAgendamentos.forEach(doc => {
@@ -116,15 +136,12 @@ function iniciarCalendarioSeguro() {
 
                 construirColunasCalendario(agendamentosOcupados, horariosBloqueados);
             }, (err) => {
-                console.warn("Aviso no bloqueio temporário, renderizando sem bloqueios:", err);
                 construirColunasCalendario(agendamentosOcupados, []);
             });
         }, (err) => {
-            console.warn("Aviso no agendamento, renderizando calendário padrão:", err);
             construirColunasCalendario([], []);
         });
     } catch (e) {
-        console.error("Erro ao iniciar calendário, executando modo padrão:", e);
         construirColunasCalendario([], []);
     }
 }
@@ -135,7 +152,6 @@ function construirColunasCalendario(ocupados, bloqueados) {
     scheduleColumnsContainer.innerHTML = "";
     const horariosDisponiveis = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
 
-    // Gerar próximos 5 dias úteis
     for (let i = 0; i < 5; i++) {
         const dataDia = new Date();
         dataDia.setDate(dataDia.getDate() + i);
@@ -209,7 +225,7 @@ async function selecionarHorario(dataHora, botaoElemento) {
         });
         bloqueioTemporarioId = docRef.id;
     } catch (e) {
-        console.error("Erro ao bloquear horário temporariamente:", e);
+        console.error("Erro ao bloquear horário:", e);
     }
 }
 
@@ -245,6 +261,7 @@ if (publicBookingForm) {
             alert("Agendamento realizado com sucesso! Aguardamos você.");
             publicBookingForm.reset();
             if (selectedDatetimeInput) selectedDatetimeInput.value = "";
+            carregarPaginaPublica();
         } catch (e) {
             console.error("Erro ao agendar:", e);
             alert("Erro ao realizar agendamento. Tente novamente.");
@@ -252,5 +269,4 @@ if (publicBookingForm) {
     });
 }
 
-// Executar carregamento inicial
 carregarPaginaPublica();
