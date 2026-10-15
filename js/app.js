@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -12,6 +12,16 @@ const selectedDatetimeInput = document.getElementById("selected-datetime");
 
 let bloqueioTemporarioId = null;
 
+// Gerar código único alfanumérico (ex: BARB-8X92)
+function gerarCodigoUnico() {
+    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    let codigo = "BARB-";
+    for (let i = 0; i < 4; i++) {
+        codigo += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return codigo;
+}
+
 // Carregar Dados da Página ao Iniciar
 async function carregarPaginaPublica() {
     console.log("A carregar página pública...");
@@ -19,28 +29,7 @@ async function carregarPaginaPublica() {
         historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.";
     }
 
-    // 1. Verificar e criar serviços iniciais se a coleção estiver vazia
-    try {
-        const servicosRef = collection(db, "servicos");
-        const snapshotInicial = await getDocs(servicosRef);
-        
-        if (snapshotInicial.empty) {
-            const servicosIniciais = [
-                { nome: "Corte de Cabelo", descricao: "Corte moderno ou clássico com acabamento na navalha", preco: "40.00" },
-                { nome: "Corte de Barba", descricao: "Barba alinhada com toalha quentinha e produtos especiais", preco: "30.00" },
-                { nome: "Corte de Cabelo e Barba", descricao: "Combo completo para renovar o visual com estilo", preco: "60.00" }
-            ];
-
-            for (let s of servicosIniciais) {
-                await addDoc(servicosRef, s);
-            }
-            console.log("Serviços iniciais criados com sucesso!");
-        }
-    } catch (e) {
-        console.error("Erro ao criar serviços padrão:", e);
-    }
-
-    // 2. Carregar Serviços para a Grid e para o Select (Com compatibilidade total de nomes de campos)
+    // 1. Carregar Serviços
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (servicosGrid) servicosGrid.innerHTML = "";
@@ -51,12 +40,10 @@ async function carregarPaginaPublica() {
         } else {
             querySnapshot.forEach((docItem) => {
                 const s = docItem.data();
-                
-                // Mapeia flexível para identificar o nome, descrição e preço independentemente de como foram gravados
                 const chaves = Object.keys(s);
                 const nomeServico = s.nome || s[chaves.find(k => k.toLowerCase().includes('corte') || k.toLowerCase().includes('nome'))] || "Serviço";
-                const descServico = s.descricao || s[chaves.find(k => k.toLowerCase().includes('desc') || k.toLowerCase().includes('moderno'))] || "Serviço de alta qualidade.";
-                const precoServico = s.preco || s[chaves.find(k => k.toLowerCase().includes('preco') || k.toLowerCase().includes('preço'))] || "40.00";
+                const descServico = s.descricao || "Serviço de alta qualidade.";
+                const precoServico = s.preco || "40.00";
 
                 if (servicosGrid) {
                     servicosGrid.innerHTML += `
@@ -76,7 +63,7 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 3. Carregar Destaques
+    // 2. Carregar Destaques
     try {
         const querySnapshot = await getDocs(collection(db, "destaques"));
         if (destaquesGrid && !querySnapshot.empty) {
@@ -96,7 +83,7 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar destaques:", e);
     }
 
-    // 4. Carregar Parceiros
+    // 3. Carregar Parceiros
     try {
         const querySnapshot = await getDocs(collection(db, "parceiros"));
         if (parceirosCarrossel && !querySnapshot.empty) {
@@ -118,8 +105,8 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar parceiros:", e);
     }
 
-    // 5. Iniciar Calendário em Colunas
     iniciarCalendarioSeguro();
+    injetarSecaoGerenciarAgendamento();
 }
 
 function iniciarCalendarioSeguro() {
@@ -127,7 +114,10 @@ function iniciarCalendarioSeguro() {
         onSnapshot(collection(db, "agendamentos"), (snapshotAgendamentos) => {
             const agendamentosOcupados = [];
             snapshotAgendamentos.forEach(doc => {
-                agendamentosOcupados.push(doc.data().dataHora);
+                const data = doc.data();
+                if (data.status !== "Cancelado") {
+                    agendamentosOcupados.push(data.dataHora);
+                }
             });
 
             onSnapshot(collection(db, "bloqueiosTemporarios"), (snapshotBloqueios) => {
@@ -142,12 +132,8 @@ function iniciarCalendarioSeguro() {
                 });
 
                 construirColunasCalendario(agendamentosOcupados, horariosBloqueados);
-            }, (err) => {
-                construirColunasCalendario(agendamentosOcupados, []);
-            });
-        }, (err) => {
-            construirColunasCalendario([], []);
-        });
+            }, () => construirColunasCalendario(agendamentosOcupados, []));
+        }, () => construirColunasCalendario([], []));
     } catch (e) {
         construirColunasCalendario([], []);
     }
@@ -206,7 +192,6 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
-// Lógica de Seleção e Bloqueio Temporário por 2 Minutos
 async function selecionarHorario(dataHora, botaoElemento) {
     document.querySelectorAll(".slot-btn").forEach(b => {
         if (!b.classList.contains("busy")) b.classList.add("available");
@@ -236,7 +221,7 @@ async function selecionarHorario(dataHora, botaoElemento) {
     }
 }
 
-// Enviar Agendamento Final
+// Enviar Agendamento com Código Único e Modal de Cópia
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -250,12 +235,16 @@ if (publicBookingForm) {
             return;
         }
 
+        const codigoUnico = gerarCodigoUnico();
+
         try {
             await addDoc(collection(db, "agendamentos"), {
                 clienteNome,
                 clienteTelefone,
                 servicoId,
                 dataHora,
+                codigoUnico,
+                status: "Confirmado",
                 origem: "Site",
                 criadoEm: new Date().toISOString()
             });
@@ -265,13 +254,117 @@ if (publicBookingForm) {
                 bloqueioTemporarioId = null;
             }
 
-            alert("Agendamento realizado com sucesso! Aguardamos você.");
+            // Exibir modal/alerta com o código único e botão de copiar
+            mostrarModalSucessoAgendamento(codigoUnico, dataHora);
+
             publicBookingForm.reset();
             if (selectedDatetimeInput) selectedDatetimeInput.value = "";
             carregarPaginaPublica();
         } catch (e) {
             console.error("Erro ao agendar:", e);
             alert("Erro ao realizar agendamento. Tente novamente.");
+        }
+    });
+}
+
+function mostrarModalSucessoAgendamento(codigo, dataHora) {
+    const modalExistente = document.getElementById("modal-codigo-sucesso");
+    if (modalExistente) modalExistente.remove();
+
+    const modal = document.createElement("div");
+    modal.id = "modal-codigo-sucesso";
+    modal.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); display:flex; justify-content:center; align-items:center; z-index:9999;";
+    
+    modal.innerHTML = `
+        <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
+            <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado!</h3>
+            <p>Guarde o seu <strong>Código Único</strong> para consultar, reagendar ou cancelar o seu horário:</p>
+            <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.4rem; font-weight:bold; margin:15px 0; letter-spacing:2px; color:#1a1a1a;" id="codigo-texto">${codigo}</div>
+            <button id="btn-copiar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:10px;">Copiar Código</button>
+            <button id="btn-fechar-modal" style="background:#ccc; color:#333; border:none; padding:8px 15px; border-radius:5px; cursor:pointer; width:100%;">Fechar</button>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    document.getElementById("btn-copiar-codigo").addEventListener("click", () => {
+        navigator.clipboard.writeText(codigo);
+        alert("Código copiado para a área de transferência!");
+    });
+
+    document.getElementById("btn-fechar-modal").addEventListener("click", () => {
+        modal.remove();
+    });
+}
+
+// Injetar secção para Gerenciar Agendamento (Reagendar / Cancelar com Código)
+function injetarSecaoGerenciarAgendamento() {
+    const secaoAgendar = document.getElementById("agendar");
+    if (!secaoAgendar || document.getElementById("gerenciar-agendamento-box")) return;
+
+    const divGerenciar = document.div = document.createElement("div");
+    divGerenciar.id = "gerenciar-agendamento-box";
+    divGerenciar.style.cssText = "background:white; padding:25px; border-radius:12px; box-shadow:0 6px 15px rgba(0,0,0,0.1); max-width:900px; margin:30px auto 0 auto; border-top:4px solid #1a1a1a; text-align:center;";
+    
+    divGerenciar.innerHTML = `
+        <h3 style="margin-top:0; color:#1a1a1a;">Já tem um agendamento?</h3>
+        <p style="color:#666; font-size:0.9rem;">Insira o seu <strong>Código Único</strong> para consultar, cancelar ou reagendar:</p>
+        <div style="display:flex; gap:10px; max-width:400px; margin:0 auto;">
+            <input type="text" id="input-codigo-busca" placeholder="Ex: BARB-1234" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px; text-transform:uppercase;">
+            <button id="btn-buscar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">Consultar</button>
+        </div>
+        <div id="resultado-busca-agendamento" style="margin-top:15px; text-align:left;"></div>
+    `;
+
+    secaoAgendar.querySelector(".container").appendChild(divGerenciar);
+
+    document.getElementById("btn-buscar-codigo").addEventListener("click", async () => {
+        const codigoBuscado = document.getElementById("input-codigo-busca").value.trim().toUpperCase();
+        const resultadoDiv = document.getElementById("resultado-busca-agendamento");
+        
+        if (!codigoBuscado) {
+            alert("Insira um código válido.");
+            return;
+        }
+
+        resultadoDiv.innerHTML = "A procurar agendamento...";
+
+        try {
+            const q = query(collection(db, "agendamentos"), where("codigoUnico", "==", codigoBuscado));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                resultadoDiv.innerHTML = "<p style='color:red; text-align:center;'>Nenhum agendamento encontrado com este código.</p>";
+                return;
+            }
+
+            querySnapshot.forEach((docItem) => {
+                const agendamento = docItem.data();
+                const docId = docItem.id;
+
+                resultadoDiv.innerHTML = `
+                    <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd;">
+                        <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
+                        <p><strong>Data/Hora Atual:</strong> ${agendamento.dataHora.replace('T', ' às ')}</p>
+                        <p><strong>Estado:</strong> ${agendamento.status || 'Confirmado'}</p>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
+                            <button id="btn-cancelar-reserva" style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; flex:1;">Cancelar Agendamento</button>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById("btn-cancelar-reserva").addEventListener("click", async () => {
+                    if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
+                        await updateDoc(doc(db, "agendamentos", docId), { status: "Cancelado" });
+                        alert("Agendamento cancelado com sucesso!");
+                        resultadoDiv.innerHTML = "";
+                        carregarPaginaPublica();
+                    }
+                });
+            });
+        } catch (err) {
+            console.error("Erro ao procurar agendamento:", err);
+            resultadoDiv.innerHTML = "<p style='color:red;'>Erro ao consultar código.</p>";
         }
     });
 }
