@@ -44,7 +44,6 @@
             color: #fff;
         }
         
-        /* Menu de Navegação e Hamburguer */
         .nav-links {
             display: flex;
             align-items: center;
@@ -145,7 +144,6 @@
             margin-top: 10px;
         }
         
-        /* Agendamento em formato de Card refinado */
         .booking-card {
             background: white;
             padding: 35px;
@@ -317,6 +315,11 @@
                         <option value="">Selecione o Serviço</option>
                     </select>
 
+                    <!-- Seleção de Barbeiro -->
+                    <select id="pub-barber-select">
+                        <option value="">Qualquer Barbeiro Disponível</option>
+                    </select>
+
                     <label style="font-weight: bold; display: block; margin-top: 20px;">Escolha a Data e o Horário:</label>
                     <div id="schedule-columns" class="schedule-columns-container"></div>
 
@@ -333,7 +336,6 @@
     </footer>
 
     <script>
-        // Lógica do menu hambúrguer e fechar ao clicar fora
         const hamburgerBtn = document.getElementById("hamburger-btn");
         const navMenu = document.getElementById("nav-menu");
 
@@ -342,7 +344,6 @@
             navMenu.classList.toggle("active");
         });
 
-        // Fechar menu ao clicar em qualquer lugar fora dele
         document.addEventListener("click", (e) => {
             if (!navMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) {
                 navMenu.classList.remove("active");
