@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel Administrativo - Barbearia</title>
-    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="icon" type="image/png" href="gomes.png">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -165,7 +165,7 @@
     <!-- TELA DE LOGIN COM GOOGLE E EMAIL -->
     <div id="login-screen">
         <div class="login-card">
-            <img src="logo.png" alt="Logo Barbearia" onerror="this.style.display='none'">
+            <img src="barbergomes.png" alt="Logo Barbearia" onerror="this.style.display='none'">
             <h2>Área Restrita</h2>
             <form id="login-form">
                 <input type="email" id="login-email" placeholder="E-mail do Administrador" required>
@@ -206,6 +206,21 @@
                 <button type="submit" class="btn-submit">Salvar Utilizador Autorizado</button>
             </form>
             <div id="admin-barbers-list" style="margin-top: 15px;">A carregar utilizadores...</div>
+        </div>
+
+        <!-- CADASTRO DE SERVIÇOS (COM IMAGEM, VALOR E TEMPO DO CARROSSEL) -->
+        <div class="admin-section">
+            <h3>Gerir Serviços (Carrossel Interativo)</h3>
+            <form id="service-form">
+                <input type="text" id="serv-nome" placeholder="Nome do Serviço" required>
+                <input type="url" id="serv-img" placeholder="URL da Imagem do Serviço" required>
+                <input type="text" id="serv-preco" placeholder="Valor (Ex: 40.00)" required>
+                <textarea id="serv-desc" placeholder="Descrição detalhada do serviço" rows="3" required></textarea>
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:10px;">Tempo de transição automática do carrossel (em segundos):</label>
+                <input type="number" id="serv-tempo" placeholder="Ex: 4 (Padrão: 4 segundos)" value="4" min="1" required>
+                <button type="submit" class="btn-submit">Adicionar Serviço</button>
+            </form>
+            <div id="admin-services-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
         <!-- CADASTRO DE PARCEIROS E VÍDEOS -->
