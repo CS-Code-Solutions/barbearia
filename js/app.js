@@ -1,7 +1,7 @@
 import { db } from "./firebase-init.js";
 import { collection, getDocs, getDoc, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const servicosGrid = document.getElementById("servicos-grid");
+const servicosCarrosselContainer = document.getElementById("servicos-carrossel-container");
 const destaquesGrid = document.getElementById("destaques-grid");
 const parceirosCarrossel = document.getElementById("parceiros-carrossel");
 const pubServiceSelect = document.getElementById("pub-service-select");
@@ -11,9 +11,20 @@ const historiaTexto = document.getElementById("historia-texto");
 const scheduleColumnsContainer = document.getElementById("schedule-columns");
 const selectedDatetimeInput = document.getElementById("selected-datetime");
 
+// Elementos da Janela Flutuante (Modal) de Serviços
+const modalServico = document.getElementById("modal-servico-detalhe");
+const modalImg = document.getElementById("modal-img");
+const modalTitulo = document.getElementById("modal-titulo");
+const modalDesc = document.getElementById("modal-desc");
+const modalPreco = document.getElementById("modal-preco");
+const btnModalAgendar = document.getElementById("btn-modal-agendar");
+const btnModalFechar = document.getElementById("btn-modal-fechar");
+
+let servicoSelecionadoIdGlobal = "";
 let bloqueioTemporarioId = null;
 let horariosOcupadosGlobal = [];
 let horariosBloqueadosGlobal = [];
+let carrosselInterval = null;
 
 function gerarCodigoUnico() {
     const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
@@ -29,35 +40,53 @@ async function carregarPaginaPublica() {
         historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional combinada com as tendências modernas, nossa barbearia é o espaço ideal para cuidar do seu visual com conforto e exclusividade.";
     }
 
-    // Carregar Serviços
+    // Carregar Serviços no Carrossel Interativo
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (pubServiceSelect) pubServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
-        if (servicosGrid) servicosGrid.innerHTML = "";
+        if (servicosCarrosselContainer) servicosCarrosselContainer.innerHTML = "";
         
         if (querySnapshot.empty) {
-            if (servicosGrid) servicosGrid.innerHTML = '<div class="empty-msg">Nenhum serviço cadastrado no momento.</div>';
+            if (servicosCarrosselContainer) servicosCarrosselContainer.innerHTML = '<div class="empty-msg">Nenhum serviço cadastrado no momento.</div>';
         } else {
+            let trackHTML = '<div class="servicos-carrossel-track" id="servicos-track">';
+            let tempoTransicao = 4000; // Padrão 4 segundos
+
             querySnapshot.forEach((docItem) => {
                 const s = docItem.data();
-                const chaves = Object.keys(s);
-                const nomeServico = s.nome || s[chaves.find(k => k.toLowerCase().includes('corte') || k.toLowerCase().includes('nome'))] || "Serviço";
+                const nomeServico = s.nome || "Serviço";
                 const descServico = s.descricao || "Serviço de alta qualidade.";
                 const precoServico = s.preco || "40.00";
-
-                if (servicosGrid) {
-                    servicosGrid.innerHTML += `
-                        <div class="card">
-                            <h3>${nomeServico}</h3>
-                            <p>${descServico}</p>
-                            <span class="price">R$ ${precoServico}</span>
-                        </div>
-                    `;
+                const imagemUrl = s.imagemUrl || 'https://via.placeholder.com/600x380';
+                
+                if (s.tempoCarrossel) {
+                    tempoTransicao = Number(s.tempoCarrossel) * 1000;
                 }
+
+                trackHTML += `
+                    <div class="servicos-slide" data-id="${docItem.id}" data-nome="${nomeServico}" data-desc="${descServico}" data-preco="${precoServico}" data-img="${imagemUrl}">
+                        <img src="${imagemUrl}" alt="${nomeServico}">
+                        <div class="servicos-slide-caption">
+                            <h3>${nomeServico} - R$ ${precoServico}</h3>
+                            <p>Clique para ver detalhes e agendar</p>
+                        </div>
+                    </div>
+                `;
+
                 if (pubServiceSelect) {
                     pubServiceSelect.innerHTML += `<option value="${docItem.id}">${nomeServico} - R$ ${precoServico}</option>`;
                 }
             });
+
+            trackHTML += '</div>';
+            if (servicosCarrosselContainer) {
+                servicosCarrosselContainer.innerHTML = `
+                    <div class="servicos-carrossel-wrapper">
+                        ${trackHTML}
+                    </div>
+                `;
+                iniciarLogicaCarrossel(tempoTransicao);
+            }
         }
     } catch (e) {
         console.error("Erro ao carregar serviços:", e);
@@ -86,7 +115,7 @@ async function carregarPaginaPublica() {
                 const d = docItem.data();
                 destaquesGrid.innerHTML += `
                     <div class="card highlight-card">
-                        <img src="${d.imagemUrl || 'https://via.placeholder.com/300'}" alt="${d.titulo}">
+                        <img src="${d.imagemUrl || 'https://via.placeholder.com/300'}" alt="${d.titulo}" style="width:100%; height:160px; object-fit:cover; border-radius:6px;">
                         <h3>${d.titulo}</h3>
                         <p>${d.descricao}</p>
                     </div>
@@ -101,10 +130,10 @@ async function carregarPaginaPublica() {
             parceirosCarrossel.innerHTML = "";
             queryParceiros.forEach((docItem) => {
                 const p = docItem.data();
-                let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe></div>` : "";
+                let videoElement = p.videoUrl ? `<div class="video-container"><iframe src="${p.videoUrl}" frameborder="0" allowfullscreen style="width:100%; height:150px; border-radius:6px; margin-top:10px;"></iframe></div>` : "";
                 parceirosCarrossel.innerHTML += `
                     <div class="carousel-item card">
-                        <img src="${p.logoUrl || 'https://via.placeholder.com/150'}" alt="${p.nome}">
+                        <img src="${p.logoUrl || 'https://via.placeholder.com/150'}" alt="${p.nome}" style="width:80px; height:80px; border-radius:50%; object-fit:cover;">
                         <h4>${p.nome}</h4>
                         ${videoElement}
                     </div>
@@ -115,6 +144,48 @@ async function carregarPaginaPublica() {
 
     iniciarCalendarioTempoReal();
     injetarSecaoGerenciarAgendamento();
+}
+
+function iniciarLogicaCarrossel(tempoMs) {
+    const track = document.getElementById("servicos-track");
+    if (!track) return;
+    const slides = track.querySelectorAll(".servicos-slide");
+    if (slides.length === 0) return;
+
+    let index = 0;
+    if (carrosselInterval) clearInterval(carrosselInterval);
+
+    carrosselInterval = setInterval(() => {
+        index = (index + 1) % slides.length;
+        track.style.transform = `translateX(-${index * 100}%)`;
+    }, tempoMs);
+
+    slides.forEach(slide => {
+        slide.addEventListener("click", () => {
+            servicoSelecionadoIdGlobal = slide.getAttribute("data-id");
+            modalImg.src = slide.getAttribute("data-img");
+            modalTitulo.textContent = slide.getAttribute("data-nome");
+            modalDesc.textContent = slide.getAttribute("data-desc");
+            modalPreco.textContent = `R$ ${slide.getAttribute("data-preco")}`;
+            if (modalServico) modalServico.style.display = "flex";
+        });
+    });
+}
+
+if (btnModalFechar && modalServico) {
+    btnModalFechar.addEventListener("click", () => {
+        modalServico.style.display = "none";
+    });
+}
+
+if (btnModalAgendar && modalServico) {
+    btnModalAgendar.addEventListener("click", () => {
+        if (pubServiceSelect && servicoSelecionadoIdGlobal) {
+            pubServiceSelect.value = servicoSelecionadoIdGlobal;
+        }
+        modalServico.style.display = "none";
+        document.getElementById("agendar").scrollIntoView({ behavior: 'smooth' });
+    });
 }
 
 function iniciarCalendarioTempoReal() {
@@ -199,10 +270,8 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
-// Seleção com Validação Direta no Servidor no momento do Clique
 async function selecionarHorario(dataHora, botaoElemento) {
     try {
-        // Validação imediata no Firestore para evitar concorrência milisecundária
         const agendamentoRef = doc(db, "agendamentos", dataHora);
         const agendamentoSnap = await getDoc(agendamentoRef);
 
@@ -250,7 +319,7 @@ async function selecionarHorario(dataHora, botaoElemento) {
     }
 
     try {
-        const expiraEm = new Date().getTime() + 120000; // 2 minutos
+        const expiraEm = new Date().getTime() + 120000;
         const docRef = await addDoc(collection(db, "bloqueiosTemporarios"), {
             dataHora: dataHora,
             expiraEm: expiraEm,
@@ -262,7 +331,6 @@ async function selecionarHorario(dataHora, botaoElemento) {
     }
 }
 
-// Submissão com ID Atómico Baseado no Horário (Impossibilita duplicidade)
 if (publicBookingForm) {
     publicBookingForm.addEventListener("submit", async (e) => {
         e.preventDefault();
@@ -285,8 +353,6 @@ if (publicBookingForm) {
 
         try {
             const codigoUnico = gerarCodigoUnico();
-            
-            // Usamos o dataHora como ID do documento para garantir exclusividade absoluta a nível de hardware
             const agendamentoDocRef = doc(db, "agendamentos", dataHora);
             
             await setDoc(agendamentoDocRef, {
