@@ -8,19 +8,26 @@ const loginForm = document.getElementById("login-form");
 const googleLoginBtn = document.getElementById("btn-google-login");
 const logoutBtn = document.getElementById("logout-btn");
 
-// Monitorizar autenticação e validar no Firestore
+// Monitorizar autenticação e validar dinamicamente na coleção 'barbeiros' do Firestore
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const emailUtilizador = user.email ? user.email.trim().toLowerCase() : "";
+        console.log("Tentativa de login com o e-mail:", emailUtilizador);
 
         try {
-            const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
+            const barbeirosRef = collection(db, "barbeiros");
+            const barbeirosSnap = await getDocs(barbeirosRef);
+            
+            console.log("Total de registos encontrados na coleção 'barbeiros':", barbeirosSnap.size);
+
             let autorizado = false;
             let perfilUtilizador = "user";
             let podeEditarGlobal = false;
 
             barbeirosSnap.forEach(docItem => {
                 const b = docItem.data();
+                console.log("A analisar documento:", docItem.id, "Dados:", b);
+                
                 if (b.email) {
                     const emailCadastrado = String(b.email).trim().toLowerCase();
                     if (emailCadastrado === emailUtilizador) {
@@ -32,7 +39,7 @@ onAuthStateChanged(auth, async (user) => {
             });
 
             if (!autorizado) {
-                alert(`O e-mail (${user.email}) não está autorizado na base de dados.`);
+                alert(`O e-mail (${user.email}) não foi encontrado ou autorizado na coleção 'barbeiros' do Firestore.`);
                 await signOut(auth);
                 return;
             }
@@ -44,8 +51,8 @@ onAuthStateChanged(auth, async (user) => {
             carregarPainelAdministrativo(isAdmin, podeEditarGlobal, user);
 
         } catch (error) {
-            console.error("Erro ao validar permissões no Firestore:", error);
-            alert("Erro ao validar autorização com a base de dados.");
+            console.error("Erro ao consultar o Firestore:", error);
+            alert("Erro ao validar autorização na base de dados: " + error.message);
             await signOut(auth);
         }
     } else {
@@ -69,7 +76,7 @@ if (loginForm) {
     });
 }
 
-// Login com Conta Google (Garantido)
+// Login com Conta Google
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
         const provider = new GoogleAuthProvider();
@@ -77,11 +84,9 @@ if (googleLoginBtn) {
             await signInWithPopup(auth, provider);
         } catch (error) {
             console.error("Erro no login com Google:", error);
-            alert("Erro ao autenticar com o Google. Verifique a consola.");
+            alert("Erro ao autenticar com o Google.");
         }
     });
-} else {
-    console.error("Botão btn-google-login não foi encontrado no HTML!");
 }
 
 if (logoutBtn) {
