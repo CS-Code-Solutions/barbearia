@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase-init.js";
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, getDoc, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const loginScreen = document.getElementById("login-screen");
 const adminPanel = document.getElementById("admin-panel");
@@ -18,16 +18,12 @@ onAuthStateChanged(auth, async (user) => {
             const barbeirosRef = collection(db, "barbeiros");
             const barbeirosSnap = await getDocs(barbeirosRef);
             
-            console.log("Total de registos encontrados na coleção 'barbeiros':", barbeirosSnap.size);
-
             let autorizado = false;
             let perfilUtilizador = "user";
             let podeEditarGlobal = false;
 
             barbeirosSnap.forEach(docItem => {
                 const b = docItem.data();
-                console.log("A analisar documento:", docItem.id, "Dados:", b);
-                
                 if (b.email) {
                     const emailCadastrado = String(b.email).trim().toLowerCase();
                     if (emailCadastrado === emailUtilizador) {
