@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, getDoc, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosGrid = document.getElementById("servicos-grid");
 const destaquesGrid = document.getElementById("destaques-grid");
@@ -199,11 +199,39 @@ function construirColunasCalendario(ocupados, bloqueados) {
     }
 }
 
+// Seleção com Validação Direta no Servidor no momento do Clique
 async function selecionarHorario(dataHora, botaoElemento) {
-    if (horariosOcupadosGlobal.includes(dataHora) || horariosBloqueadosGlobal.includes(dataHora)) {
-        alert("Este horário acabou de ser ocupado por outro cliente.");
-        iniciarCalendarioTempoReal();
-        return;
+    try {
+        // Validação imediata no Firestore para evitar concorrência milisecundária
+        const agendamentoRef = doc(db, "agendamentos", dataHora);
+        const agendamentoSnap = await getDoc(agendamentoRef);
+
+        if (agendamentoSnap.exists() && agendamentoSnap.data().status !== "Cancelado") {
+            alert("Atenção: Este horário acabou de ser ocupado por outro cliente. Por favor, escolha outro.");
+            iniciarCalendarioTempoReal();
+            return;
+        }
+
+        const agora = new Date().getTime();
+        const qBloqueios = query(collection(db, "bloqueiosTemporarios"), where("dataHora", "==", dataHora));
+        const bloqueiosSnap = await getDocs(qBloqueios);
+        
+        let bloqueadoPorOutro = false;
+        bloqueiosSnap.forEach(bDoc => {
+            const dadosBloqueio = bDoc.data();
+            if (dadosBloqueio.expiraEm && dadosBloqueio.expiraEm > agora) {
+                bloqueadoPorOutro = true;
+            }
+        });
+
+        if (bloqueadoPorOutro) {
+            alert("Este horário está temporariamente bloqueado por outro cliente neste momento. Tente novamente em alguns minutos.");
+            iniciarCalendarioTempoReal();
+            return;
+        }
+
+    } catch (e) {
+        console.error("Erro ao validar disponibilidade no servidor:", e);
     }
 
     document.querySelectorAll(".slot-btn").forEach(b => {
