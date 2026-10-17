@@ -20,46 +20,39 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 1rem;
+            padding: 0.8rem 2rem;
             position: sticky;
             top: 0;
             z-index: 1000;
         }
+        /* Contentor para juntar o logotipo e o menu à esquerda no PC */
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 40px;
+        }
         .logo-container {
             display: flex;
             align-items: center;
-            gap: 12px;
         }
-.circle-logo {
+        .circle-logo {
             width: auto;
-            height: 70px; /* Aumentado de 40px para 70px */
+            height: 70px;
             max-height: 100%;
             border-radius: 0;
             object-fit: contain;
             border: none;
             background-color: transparent;
         }
-        .site-header {
-            background-color: #1a1a1a;
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.8rem 1.5rem; /* Ajustado para dar mais respiro ao logo maior */
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-        }
-
         .nav-links {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 20px;
         }
         .nav-links a {
             color: #fff;
             text-decoration: none;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
             font-weight: bold;
             transition: color 0.3s;
         }
@@ -76,6 +69,13 @@
         }
 
         @media (max-width: 768px) {
+            .site-header {
+                padding: 0.8rem 1rem;
+            }
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+            }
             .hamburger {
                 display: block;
             }
@@ -384,18 +384,20 @@
 </head>
 <body>
     <header class="site-header">
-        <div class="logo-container">
-            <img src="barbergomes.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
-                   </div>
+        <div class="header-left">
+            <div class="logo-container">
+                <img src="barbergomes.png" alt="Logotipo Barbearia" class="circle-logo" id="site-logo" onerror="this.style.display='none'">
+            </div>
+            <nav class="nav-links" id="nav-menu">
+                <a href="#agendar" class="link-menu-agendar">Agendar</a>
+                <a href="#servicos" class="link-menu-servicos">Serviços</a>
+                <a href="#destaques">Destaques</a>
+                <a href="#parceiros">Parceiros</a>
+                <a href="#sobre">Nossa História</a>
+                <a href="admin.html" class="admin-link" target="_blank">Admin</a>
+            </nav>
+        </div>
         <button class="hamburger" id="hamburger-btn">&#9776;</button>
-        <nav class="nav-links" id="nav-menu">
-            <a href="#agendar" class="link-menu-agendar">Agendar</a>
-            <a href="#servicos" class="link-menu-servicos">Serviços</a>
-            <a href="#destaques">Destaques</a>
-            <a href="#parceiros">Parceiros</a>
-            <a href="#sobre">Nossa História</a>
-            <a href="admin.html" class="admin-link" target="_blank">Admin</a>
-        </nav>
     </header>
 
     <!-- Seção de Agendamento no Topo -->
