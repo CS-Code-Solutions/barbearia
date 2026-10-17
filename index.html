@@ -30,18 +30,25 @@
             align-items: center;
             gap: 12px;
         }
-        .circle-logo {
+.circle-logo {
             width: auto;
-            height: 40px;
+            height: 70px; /* Aumentado de 40px para 70px */
+            max-height: 100%;
             border-radius: 0;
             object-fit: contain;
             border: none;
             background-color: transparent;
         }
-        .site-header h1 {
-            font-size: 1.2rem;
-            margin: 0;
+        .site-header {
+            background-color: #1a1a1a;
             color: #fff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.8rem 1.5rem; /* Ajustado para dar mais respiro ao logo maior */
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
         .nav-links {
