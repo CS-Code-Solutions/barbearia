@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 console.log("admin.js iniciado com sucesso!");
 
@@ -66,7 +66,6 @@ function setupFormularioServico() {
             }
 
             if (editId) {
-                // Atualizar serviço existente
                 const dadosAtualizados = {
                     nome: nome,
                     preco: preco,
@@ -86,7 +85,6 @@ function setupFormularioServico() {
                 if (btnCancelarServico) btnCancelarServico.style.display = "none";
                 document.getElementById("serv-img-file").required = true;
             } else {
-                // Adicionar novo serviço
                 if (!fileInput || fileInput.files.length === 0) {
                     alert("Por favor, selecione uma imagem para o novo serviço.");
                     return;
@@ -201,9 +199,7 @@ async function carregarServicosAdmin() {
                 document.getElementById("serv-desc").value = decodeURIComponent(btn.getAttribute("data-desc"));
                 document.getElementById("serv-tempo").value = btn.getAttribute("data-tempo");
 
-                // Torna opcional a imagem ao editar
                 document.getElementById("serv-img-file").required = false;
-
                 document.getElementById("btn-submit-servico").textContent = "Atualizar Serviço";
                 document.getElementById("btn-cancelar-servico").style.display = "block";
 
@@ -236,6 +232,7 @@ async function carregarAgendamentosAdmin() {
             const a = docItem.data();
             const docId = docItem.id;
             const dataHoraOriginal = a.dataHora || '';
+            const servicosTexto = a.nomesServicos || 'Serviço';
             
             let dataHoraTexto = 'Data não definida';
             if (dataHoraOriginal) {
@@ -252,6 +249,7 @@ async function carregarAgendamentosAdmin() {
                 <div style="background:#fff; border-left: 4px solid #d4af37; padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #1a1a1a;" id="agendamento-${docId}">
                     <p style="margin: 4px 0;"><strong>Cliente:</strong> ${a.clienteNome || 'Cliente'} (${a.clienteTelefone || ''})</p>
                     <p style="margin: 4px 0;"><strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer'}</p>
+                    <p style="margin: 4px 0;"><strong>Serviço(s):</strong> ${servicosTexto}</p>
                     <p style="margin: 4px 0;"><strong>Data/Hora:</strong> ${dataHoraTexto}</p>
                     <p style="margin: 4px 0;"><strong>Código:</strong> <span style="color:#b8860b; font-weight:bold;">${a.codigoUnico || 'N/A'}</span></p>
                     
