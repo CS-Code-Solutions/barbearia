@@ -136,7 +136,6 @@
                     const dataHoraOriginal = a.dataHora || '';
                     if (!dataHoraOriginal) return;
 
-                    // Calcular duração total dos serviços
                     let duracaoMin = 30;
                     const listaServicos = a.servicosIds || (a.servicoId ? [a.servicoId] : []);
                     if (listaServicos.length > 0) {
@@ -159,7 +158,6 @@
                     const inicioMs = new Date(dataHoraOriginal).getTime();
                     const fimMs = inicioMs + (duracaoMin * 60000);
 
-                    // Se o horário final já passou, é considerado concluído e sai automaticamente da tela
                     if (agora > fimMs) return;
 
                     let statusBadge = "";
@@ -167,7 +165,9 @@
                         statusBadge = `<span class="badge-atendimento">EM ATENDIMENTO</span><br>`;
                     }
 
-                    const servicosTexto = a.nomesServicos || 'Serviço Padrão';
+                    // Substitui vírgulas por ' + ' caso existam
+                    let servicosTexto = a.nomesServicos || 'Serviço Padrão';
+                    servicosTexto = servicosTexto.replace(/,\s*/g, ' + ');
 
                     ativos.push({
                         dataYMD,
