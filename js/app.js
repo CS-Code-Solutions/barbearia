@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosCarrosselContainer = document.getElementById("servicos-carrossel-container");
 const servicesCheckboxContainer = document.getElementById("services-checkbox-container");
@@ -42,7 +42,6 @@ function minutosParaTempo(minTotal) {
 }
 
 async function carregarPaginaPublica() {
-    // 1. Carregar Serviços
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (servicesCheckboxContainer) servicesCheckboxContainer.innerHTML = "";
@@ -57,7 +56,6 @@ async function carregarPaginaPublica() {
                 const s = docItem.data();
                 const servicoId = docItem.id;
                 const nomeServico = s.nome || "Serviço";
-                const descServico = s.descricao || "";
                 const precoServico = s.preco || "40.00";
                 const duracaoMinutos = Number(s.duracaoMinutos) || 30;
                 const imagemUrl = s.imagemUrl || 'https://via.placeholder.com/600x380';
@@ -95,23 +93,18 @@ async function carregarPaginaPublica() {
                 servicosCarrosselContainer.innerHTML = `<div class="servicos-carrossel-wrapper">${trackHTML}</div>`;
                 iniciarLogicaCarrossel(tempoTransicao);
             }
-        } else {
-            if (servicesCheckboxContainer) {
-                servicesCheckboxContainer.innerHTML = "<p style='color:#888; text-align:center;'>Nenhum serviço registado.</p>";
-            }
         }
     } catch (e) {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 2. Carregar Barbeiros
     try {
         const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
         if (barberSelectionContainer) {
             barberSelectionContainer.innerHTML = "";
             
             if (barbeirosSnap.empty) {
-                barberSelectionContainer.innerHTML = "<p style='color:#888; text-align:center; grid-column:1/-1;'>Nenhum barbeiro registado. Cadastre no painel admin.</p>";
+                barberSelectionContainer.innerHTML = "<p style='color:#888; text-align:center; grid-column:1/-1;'>Nenhum barbeiro registado.</p>";
                 return;
             }
 
@@ -183,7 +176,6 @@ function iniciarCalendarioTempoReal() {
                 const data = doc.data();
                 if (data.status !== "Cancelado" && data.barbeiroNome === barbeiroSelecionadoGlobal) {
                     let duracaoTotal = 0;
-                    // Suporta tanto array de serviços quanto serviço único antigo
                     const listaServicos = data.servicosIds || (data.servicoId ? [data.servicoId] : []);
                     
                     if (listaServicos.length > 0) {
@@ -324,7 +316,6 @@ if (modalBookingForm) {
         const clienteNome = document.getElementById("modal-client-name").value;
         const clienteTelefone = document.getElementById("modal-client-phone").value;
         
-        // Obter todos os serviços selecionados via checkbox
         const checkboxes = document.querySelectorAll('input[name="servicos"]:checked');
         if (checkboxes.length === 0) {
             alert("Selecione pelo menos um serviço.");
@@ -362,7 +353,7 @@ if (modalBookingForm) {
                 clienteNome,
                 clienteTelefone,
                 servicosIds,
-                nomesServicos: nomesServicos.join(", "),
+                nomesServicos: nomesServicos.join(" + "),
                 duracaoTotal,
                 precoTotal: precoTotal.toFixed(2),
                 barbeiroNome,
@@ -447,6 +438,11 @@ function injetarSecaoGerenciarAgendamento() {
         resultadoDiv.innerHTML = "<p style='color:#d4af37; text-align:center;'>A procurar agendamento...</p>";
 
         try {
+            // Buscar regras de cancelamento e reagendamento
+            const regrasSnap = await getDoc(doc(db, "configuracoes", "regras"));
+            const regras = regrasSnap.exists() ? regrasSnap.data() : { horasCancelar: 2, horasReagendar: 2, whatsappSuporte: "" };
+            const whatsappNum = regras.whatsappSuporte || "5511999999999";
+
             const q = query(collection(db, "agendamentos"), where("codigoUnico", "==", codigoBuscado));
             const querySnapshot = await getDocs(q);
 
@@ -459,7 +455,14 @@ function injetarSecaoGerenciarAgendamento() {
                 const agendamento = docItem.data();
                 const docId = docItem.id;
                 const dataHoraOriginal = agendamento.dataHora || '';
-                const servicosTexto = agendamento.nomesServicos || 'Serviço';
+                const servicosTexto = (agendamento.nomesServicos || 'Serviço').replace(/,\s*/g, ' + ');
+
+                const agoraMs = new Date().getTime();
+                const inicioMs = new Date(dataHoraOriginal).getTime();
+                const horasRestantes = (inicioMs - agoraMs) / 3600000;
+
+                const podeReagendar = horasRestantes >= (Number(regras.horasReagendar) || 2);
+                const podeCancelar = horasRestantes >= (Number(regras.horasCancelar) || 2);
 
                 resultadoDiv.innerHTML = `
                     <div style="background:#1a1a1a; padding:15px; border-radius:8px; border:1px solid #333; color:#ccc;">
@@ -470,36 +473,57 @@ function injetarSecaoGerenciarAgendamento() {
                         <p><strong>Estado:</strong> ${agendamento.status || 'Confirmado'}</p>
                         
                         <div style="margin-top:15px; border-top:1px solid #333; padding-top:10px;">
-                            <label style="font-size:0.85rem; font-weight:bold; display:block; margin-bottom:5px; color:#888;">Escolha a nova data e horário:</label>
-                            <input type="datetime-local" id="novo-horario-cliente-${docId}" value="${dataHoraOriginal}" style="width:100%; padding:10px; background:#141414; border:1px solid #333; color:#fff; border-radius:6px; margin-bottom:10px; box-sizing:border-box;">
+                            <label style="font-size:0.85rem; font-weight:bold; display:block; margin-bottom:5px; color:#888;">Reagendar / Cancelar:</label>
                             
-                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                                <button id="btn-reagendar-reserva" class="btn-primary-custom" style="flex:1; padding:10px;">Reagendar</button>
-                                <button id="btn-cancelar-reserva" style="background:#dc3545; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold; flex:1;">Cancelar</button>
+                            <div style="margin-bottom: 12px;">
+                                ${podeReagendar ? `
+                                    <input type="datetime-local" id="novo-horario-cliente-${docId}" value="${dataHoraOriginal}" style="width:100%; padding:10px; background:#141414; border:1px solid #333; color:#fff; border-radius:6px; margin-bottom:8px; box-sizing:border-box;">
+                                    <button id="btn-reagendar-reserva" class="btn-primary-custom" style="width:100%; padding:10px; margin-bottom:8px;">Reagendar</button>
+                                ` : `
+                                    <div style="background:rgba(220,53,69,0.15); border:1px solid #dc3545; padding:10px; border-radius:6px; color:#ff6b6b; font-size:0.85rem; margin-bottom:10px;">
+                                        ⚠️ O reagendamento online encerrou (limite de ${regras.horasReagendar}h de antecedência).<br>
+                                        <a href="https://wa.me/${whatsappNum}?text=${encodeURIComponent(`Olá, gostaria de REAGENDAR o meu agendamento (${codigoBuscado}) para o serviço ${servicosTexto} com o barbeiro ${agendamento.barbeiroNome}.`)}" target="_blank" style="display:inline-block; margin-top:8px; background:#25D366; color:#fff; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold;">💬 Falar no WhatsApp para Reagendar</a>
+                                    </div>
+                                `}
+                            </div>
+
+                            <div>
+                                ${podeCancelar ? `
+                                    <button id="btn-cancelar-reserva" style="background:#dc3545; color:white; border:none; padding:10px 15px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%;">Cancelar Agendamento</button>
+                                ` : `
+                                    <div style="background:rgba(220,53,69,0.15); border:1px solid #dc3545; padding:10px; border-radius:6px; color:#ff6b6b; font-size:0.85rem;">
+                                        ⚠️ O cancelamento online encerrou (limite de ${regras.horasCancelar}h de antecedência).<br>
+                                        <a href="https://wa.me/${whatsappNum}?text=${encodeURIComponent(`Olá, gostaria de CANCELAR o meu agendamento (${codigoBuscado}) para o serviço ${servicosTexto} com o barbeiro ${agendamento.barbeiroNome}.`)}" target="_blank" style="display:inline-block; margin-top:8px; background:#25D366; color:#fff; padding:6px 12px; border-radius:6px; text-decoration:none; font-weight:bold;">💬 Falar no WhatsApp para Cancelar</a>
+                                    </div>
+                                `}
                             </div>
                         </div>
                     </div>
                 `;
 
-                document.getElementById("btn-reagendar-reserva").addEventListener("click", async () => {
-                    const novoInput = document.getElementById(`novo-horario-cliente-${docId}`).value;
-                    if (!novoInput) { alert("Selecione a nova data."); return; }
-                    try {
-                        await updateDoc(doc(db, "agendamentos", docId), { dataHora: novoInput });
-                        alert("Horário reagendado com sucesso!");
-                        resultadoDiv.innerHTML = "";
-                        carregarPaginaPublica();
-                    } catch (err) { alert("Erro ao reagendar: " + err.message); }
-                });
+                if (podeReagendar) {
+                    document.getElementById("btn-reagendar-reserva").addEventListener("click", async () => {
+                        const novoInput = document.getElementById(`novo-horario-cliente-${docId}`).value;
+                        if (!novoInput) { alert("Selecione a nova data."); return; }
+                        try {
+                            await updateDoc(doc(db, "agendamentos", docId), { dataHora: novoInput });
+                            alert("Horário reagendado com sucesso!");
+                            resultadoDiv.innerHTML = "";
+                            carregarPaginaPublica();
+                        } catch (err) { alert("Erro ao reagendar: " + err.message); }
+                    });
+                }
 
-                document.getElementById("btn-cancelar-reserva").addEventListener("click", async () => {
-                    if (confirm("Tem certeza que deseja cancelar?")) {
-                        await updateDoc(doc(db, "agendamentos", docId), { status: "Cancelado" });
-                        alert("Agendamento cancelado!");
-                        resultadoDiv.innerHTML = "";
-                        carregarPaginaPublica();
-                    }
-                });
+                if (podeCancelar) {
+                    document.getElementById("btn-cancelar-reserva").addEventListener("click", async () => {
+                        if (confirm("Tem certeza que deseja cancelar?")) {
+                            await updateDoc(doc(db, "agendamentos", docId), { status: "Cancelado" });
+                            alert("Agendamento cancelado!");
+                            resultadoDiv.innerHTML = "";
+                            carregarPaginaPublica();
+                        }
+                    });
+                }
             });
         } catch (err) {
             resultadoDiv.innerHTML = "<p style='color:#e74c3c;'>Erro ao consultar código.</p>";
