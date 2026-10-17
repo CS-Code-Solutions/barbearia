@@ -13,70 +13,9 @@
             padding: 0;
             color: #333;
         }
-        #login-screen {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            background: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), #1a1a1a;
-        }
-        .login-card {
-            background: white;
-            padding: 40px;
-            border-radius: 10px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 400px;
-            text-align: center;
-        }
-        .login-card img {
-            width: 60px;
-            height: 60px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 2px solid #d4af37;
-            margin-bottom: 15px;
-        }
-        .login-card h2 {
-            margin-bottom: 20px;
-            color: #1a1a1a;
-            font-size: 1.4rem;
-        }
-        .login-card input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-        }
-        .login-card button {
-            background-color: #1a1a1a;
-            color: #fff;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 10px;
-            transition: background 0.3s;
-        }
-        .login-card button:hover {
-            background-color: #d4af37;
-            color: #1a1a1a;
-        }
-        .btn-google {
-            background-color: #db4437 !important;
-            margin-top: 15px !important;
-        }
-        .btn-google:hover {
-            background-color: #c23321 !important;
-            color: white !important;
-        }
 
         #admin-panel {
-            display: none;
+            display: block; /* Aberto diretamente sem ecrã de login */
             padding: 20px;
             max-width: 1100px;
             margin: 0 auto;
@@ -111,18 +50,6 @@
         }
         .btn-live:hover {
             background-color: #218838;
-        }
-        .btn-logout {
-            background-color: #dc3545;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        .btn-logout:hover {
-            background-color: #c82333;
         }
         .admin-section {
             background: white;
@@ -162,22 +89,7 @@
 </head>
 <body>
 
-    <!-- TELA DE LOGIN COM GOOGLE E EMAIL -->
-    <div id="login-screen">
-        <div class="login-card">
-            <img src="gomes.png" alt="Logo Barbearia" onerror="this.style.display='none'">
-            <h2>Área Restrita</h2>
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="E-mail do Administrador" required>
-                <input type="password" id="login-password" placeholder="Senha" required>
-                <button type="submit">Entrar com E-mail</button>
-            </form>
-            <hr style="margin: 20px 0; border:0; border-top:1px solid #ddd;">
-            <button type="button" id="btn-google-login" class="btn-google">Entrar com a Conta Google</button>
-        </div>
-    </div>
-
-    <!-- PAINEL ADMINISTRATIVO -->
+    <!-- PAINEL ADMINISTRATIVO DIRETO -->
     <div id="admin-panel">
         <div class="admin-header">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -186,16 +98,15 @@
             </div>
             <div class="header-actions">
                 <a href="live.html" target="_blank" class="btn-live">🖥️ Abrir Agenda em Tempo Real (Tela PC)</a>
-                <button id="logout-btn" class="btn-logout">Sair</button>
             </div>
         </div>
 
         <!-- CADASTRO DE UTILIZADORES / BARBEIROS E PERMISSÕES -->
         <div class="admin-section" id="section-barbeiros">
-            <h3>Cadastrar Utilizador / Barbeiro Autorizado</h3>
+            <h3>Gerir Utilizadores / Barbeiros Autorizados</h3>
             <form id="barber-form">
                 <input type="text" id="barber-nome" placeholder="Nome Completo" required>
-                <input type="email" id="barber-email" placeholder="E-mail Google Autorizado para Login" required>
+                <input type="email" id="barber-email" placeholder="E-mail de Contato" required>
                 <select id="barber-perfil" required style="width:100%; padding:10px; margin:6px 0 12px 0; border:1px solid #ccc; border-radius:4px;">
                     <option value="barbeiro">Barbeiro (Restrito)</option>
                     <option value="admin">Administrador (Acesso Total)</option>
@@ -254,6 +165,7 @@
         </div>
     </div>
 
+    <!-- Script Admin atualizado para carregar sem restrição de autenticação -->
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>
