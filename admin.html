@@ -118,7 +118,7 @@
             <div id="admin-barbers-list" style="margin-top: 15px;">A carregar utilizadores...</div>
         </div>
 
-        <!-- GERIR SERVIÇOS (COM UPLOAD DE IMAGEM) -->
+        <!-- GERIR SERVIÇOS -->
         <div class="admin-section">
             <h3>Gerir Serviços (Carrossel Interativo)</h3>
             <form id="service-form">
@@ -129,14 +129,16 @@
                 
                 <input type="text" id="serv-preco" placeholder="Valor (Ex: 40.00)" required>
                 <textarea id="serv-desc" placeholder="Descrição detalhada do serviço" rows="3" required></textarea>
+                
                 <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:10px;">Tempo de transição automática do carrossel (em segundos):</label>
                 <input type="number" id="serv-tempo" placeholder="Ex: 4 (Padrão: 4 segundos)" value="4" min="1" required>
+                
                 <button type="submit" class="btn-submit">Adicionar Serviço</button>
             </form>
             <div id="admin-services-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
-        <!-- GERIR PARCEIROS (COM UPLOAD DE LOGÓTIPO) -->
+        <!-- GERIR PARCEIROS -->
         <div class="admin-section">
             <h3>Gerir Parceiros e Vídeos</h3>
             <form id="partner-form">
@@ -151,7 +153,7 @@
             <div id="admin-partners-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
-        <!-- GERIR DESTAQUES (COM UPLOAD DE IMAGEM) -->
+        <!-- GERIR DESTAQUES -->
         <div class="admin-section">
             <h3>Gerir Destaques</h3>
             <form id="highlight-form">
