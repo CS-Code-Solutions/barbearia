@@ -90,7 +90,17 @@
                 const a = docItem.data();
                 if (a.status === "Cancelado") return;
 
-                const dataHoraTexto = a.dataHora ? a.dataHora.replace('T', ' às ') : 'Data não definida';
+                // Formatar data de AAAA-MM-DDTHH:MM para DD/MM/AAAA às HH:MM
+                let dataHoraTexto = 'Data não definida';
+                if (a.dataHora) {
+                    const partes = a.dataHora.split('T');
+                    if (partes.length === 2) {
+                        const [ano, mes, dia] = partes[0].split('-');
+                        dataHoraTexto = `${dia}/${mes}/${ano} às ${partes[1]}`;
+                    } else {
+                        dataHoraTexto = a.dataHora;
+                    }
+                }
 
                 container.innerHTML += `
                     <div class="live-card">
