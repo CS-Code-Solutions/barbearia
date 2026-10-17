@@ -28,10 +28,11 @@
             color: white;
             padding: 15px 25px;
             border-radius: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
             flex-wrap: wrap;
             gap: 15px;
             border: 1px solid #222;
+            position: relative;
         }
         .header-actions {
             display: flex;
@@ -48,10 +49,54 @@
             font-weight: bold;
             text-decoration: none;
             display: inline-block;
+            font-size: 0.9rem;
         }
         .btn-live:hover {
             background-color: #218838;
         }
+
+        /* Menu Hambúrguer do Painel Admin */
+        .admin-hamburger {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #d4af37;
+            font-size: 1.4rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .admin-menu-dropdown {
+            display: none;
+            position: absolute;
+            top: 100%;
+            right: 25px;
+            background: #141414;
+            border: 1px solid #333;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.8);
+            width: 260px;
+            z-index: 1000;
+            padding: 10px 0;
+        }
+        .admin-menu-dropdown.active {
+            display: block;
+        }
+        .admin-menu-dropdown button {
+            width: 100%;
+            background: none;
+            border: none;
+            color: #ccc;
+            text-align: left;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .admin-menu-dropdown button:hover {
+            background: #1f1f1f;
+            color: #d4af37;
+        }
+
         .admin-section {
             background: #141414;
             padding: 20px 25px;
@@ -59,35 +104,31 @@
             margin-bottom: 20px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: 1px solid #222;
+            display: none; /* Por padrão ocultas, exceto agendamentos */
+        }
+        .admin-section.active-section {
+            display: block;
         }
         
-        .section-toggle-btn {
-            background: transparent;
-            border: none;
-            width: 100%;
-            text-align: left;
+        .section-title-fixed {
             font-size: 1.2rem;
             color: #f4f4f4;
             font-weight: bold;
             font-family: Georgia, serif;
-            cursor: pointer;
+            padding-bottom: 5px;
+            border-bottom: 2px solid #d4af37;
+            margin-top: 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding-bottom: 5px;
-            border-bottom: 2px solid #d4af37;
         }
-        .section-toggle-btn span {
+        .section-title-fixed span {
             color: #d4af37;
             font-size: 1rem;
         }
 
         .section-content {
-            display: none;
             margin-top: 20px;
-        }
-        .section-content.active {
-            display: block;
         }
 
         form input, form textarea, form select {
@@ -146,9 +187,6 @@
             margin-top: 8px;
             display: none;
         }
-        .btn-cancelar-edicao:hover {
-            opacity: 0.9;
-        }
     </style>
 </head>
 <body>
@@ -161,15 +199,35 @@
             </div>
             <div class="header-actions">
                 <a href="live.html" target="_blank" class="btn-live">🖥️ Abrir Agenda em Tempo Real (Tela PC)</a>
+                <button class="admin-hamburger" id="admin-hamburger-btn" title="Menu de Gestão">&#9776;</button>
+            </div>
+
+            <!-- Menu Dropdown Hambúrguer -->
+            <div class="admin-menu-dropdown" id="admin-menu-dropdown">
+                <button onclick="mudarSecaoAdmin('section-agendamentos')">📋 Agendamentos Confirmados</button>
+                <button onclick="mudarSecaoAdmin('section-barbeiros')">👤 Gerir Utilizadores / Barbeiros</button>
+                <button onclick="mudarSecaoAdmin('section-servicos')">✂️ Gerir Serviços e Duração</button>
+                <button onclick="mudarSecaoAdmin('section-parceiros')">🤝 Gerir Parceiros e Vídeos</button>
+                <button onclick="mudarSecaoAdmin('section-destaques')">⭐ Gerir Destaques</button>
+            </div>
+        </div>
+
+        <!-- AGENDAMENTOS (Visível por padrão) -->
+        <div class="admin-section active-section" id="section-agendamentos">
+            <div class="section-title-fixed">
+                Agendamentos Confirmados (Gestão e Edição) <span>📅</span>
+            </div>
+            <div class="section-content">
+                <div id="admin-appointments-list" style="margin-top: 15px;">A carregar agendamentos...</div>
             </div>
         </div>
 
         <!-- GERIR UTILIZADORES / BARBEIROS -->
         <div class="admin-section" id="section-barbeiros">
-            <button class="section-toggle-btn" onclick="toggleSection('content-barbeiros')">
-                Gerir Utilizadores / Barbeiros Autorizados <span>▼</span>
-            </button>
-            <div id="content-barbeiros" class="section-content">
+            <div class="section-title-fixed">
+                Gerir Utilizadores / Barbeiros Autorizados <span>👤</span>
+            </div>
+            <div class="section-content">
                 <form id="barber-form">
                     <input type="text" id="barber-nome" placeholder="Nome Completo" required>
                     <input type="email" id="barber-email" placeholder="E-mail de Contato" required>
@@ -190,11 +248,11 @@
         </div>
 
         <!-- GERIR SERVIÇOS -->
-        <div class="admin-section">
-            <button class="section-toggle-btn" onclick="toggleSection('content-servicos')">
-                Gerir Serviços e Duração na Agenda <span>▼</span>
-            </button>
-            <div id="content-servicos" class="section-content">
+        <div class="admin-section" id="section-servicos">
+            <div class="section-title-fixed">
+                Gerir Serviços e Duração na Agenda <span>✂️</span>
+            </div>
+            <div class="section-content">
                 <form id="service-form">
                     <input type="hidden" id="serv-edit-id">
                     <input type="text" id="serv-nome" placeholder="Nome do Serviço" required>
@@ -229,11 +287,11 @@
         </div>
 
         <!-- GERIR PARCEIROS -->
-        <div class="admin-section">
-            <button class="section-toggle-btn" onclick="toggleSection('content-parceiros')">
-                Gerir Parceiros e Vídeos <span>▼</span>
-            </button>
-            <div id="content-parceiros" class="section-content">
+        <div class="admin-section" id="section-parceiros">
+            <div class="section-title-fixed">
+                Gerir Parceiros e Vídeos <span>🤝</span>
+            </div>
+            <div class="section-content">
                 <form id="partner-form">
                     <input type="text" id="part-nome" placeholder="Nome do Parceiro" required>
                     
@@ -248,11 +306,11 @@
         </div>
 
         <!-- GERIR DESTAQUES -->
-        <div class="admin-section">
-            <button class="section-toggle-btn" onclick="toggleSection('content-destaques')">
-                Gerir Destaques <span>▼</span>
-            </button>
-            <div id="content-destaques" class="section-content">
+        <div class="admin-section" id="section-destaques">
+            <div class="section-title-fixed">
+                Gerir Destaques <span>⭐</span>
+            </div>
+            <div class="section-content">
                 <form id="highlight-form">
                     <input type="text" id="high-titulo" placeholder="Título do Destaque" required>
                     
@@ -265,22 +323,27 @@
                 <div id="admin-highlights-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
             </div>
         </div>
-
-        <!-- AGENDAMENTOS -->
-        <div class="admin-section">
-            <button class="section-toggle-btn" onclick="toggleSection('content-agendamentos')">
-                Agendamentos Confirmados (Gestão e Edição) <span>▼</span>
-            </button>
-            <div id="content-agendamentos" class="section-content active">
-                <div id="admin-appointments-list" style="margin-top: 15px;">A carregar agendamentos...</div>
-            </div>
-        </div>
     </div>
 
     <script>
-        function toggleSection(contentId) {
-            const content = document.getElementById(contentId);
-            content.classList.toggle("active");
+        const adminHamburgerBtn = document.getElementById("admin-hamburger-btn");
+        const adminMenuDropdown = document.getElementById("admin-menu-dropdown");
+
+        adminHamburgerBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            adminMenuDropdown.classList.toggle("active");
+        });
+
+        document.addEventListener("click", () => {
+            adminMenuDropdown.classList.remove("active");
+        });
+
+        function mudarSecaoAdmin(sectionId) {
+            document.querySelectorAll(".admin-section").forEach(sec => {
+                sec.classList.remove("active-section");
+            });
+            document.getElementById(sectionId).classList.add("active-section");
+            adminMenuDropdown.classList.remove("active");
         }
     </script>
     <script type="module" src="js/admin.js"></script>
