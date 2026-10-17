@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agenda em Tempo Real - Barbearia Gomes</title>
+    <link rel="icon" type="image/png" href="gomes.png">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #0d0d0d;
+            color: #f4f4f4;
+            margin: 0;
+            padding: 30px;
+        }
+        header {
+            text-align: center;
+            border-bottom: 2px solid #d4af37;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        header h1 {
+            color: #d4af37;
+            margin: 0;
+            font-family: Georgia, serif;
+            font-size: 2.5rem;
+        }
+        .live-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+        .live-card {
+            background: #141414;
+            border-left: 5px solid #d4af37;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            border: 1px solid #222;
+        }
+        .live-card h3 {
+            margin-top: 0;
+            color: #d4af37;
+            font-size: 1.3rem;
+            border-bottom: 1px solid #333;
+            padding-bottom: 8px;
+        }
+        .live-card p {
+            margin: 8px 0;
+            font-size: 1rem;
+            color: #ccc;
+        }
+        .empty-msg {
+            text-align: center;
+            color: #666;
+            font-size: 1.2rem;
+            grid-column: 1 / -1;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>Agenda em Tempo Real</h1>
+        <p style="color: #888; margin-top: 5px;">Acompanhamento de horários da barbearia</p>
+    </header>
+
+    <div id="live-appointments-container" class="live-grid">
+        <p class="empty-msg">A carregar agendamentos em tempo real...</p>
+    </div>
+
+    <script type="module">
+        import { db } from "./js/firebase-init.js";
+        import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+        const container = document.getElementById("live-appointments-container");
+
+        onSnapshot(collection(db, "agendamentos"), (snapshot) => {
+            container.innerHTML = "";
+
+            if (snapshot.empty) {
+                container.innerHTML = '<p class="empty-msg">Nenhum agendamento registado no momento.</p>';
+                return;
+            }
+
+            snapshot.forEach((docItem) => {
+                const a = docItem.data();
+                if (a.status === "Cancelado") return;
+
+                const dataHoraTexto = a.dataHora ? a.dataHora.replace('T', ' às ') : 'Data não definida';
+
+                container.innerHTML += `
+                    <div class="live-card">
+                        <h3>${dataHoraTexto}</h3>
+                        <p><strong>Cliente:</strong> ${a.clienteNome || 'Cliente'}</p>
+                        <p><strong>Telefone:</strong> ${a.clienteTelefone || 'N/A'}</p>
+                        <p><strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer Barbeiro'}</p>
+                        <p><strong>Código:</strong> <span style="color:#d4af37; font-weight:bold;">${a.codigoUnico || 'N/A'}</span></p>
+                    </div>
+                `;
+            });
+        });
+    </script>
+</body>
+</html>
