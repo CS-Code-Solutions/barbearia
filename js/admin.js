@@ -30,11 +30,17 @@ function setupFormularioServico() {
 
     serviceForm.onsubmit = async (e) => {
         e.preventDefault();
-        const nome = document.getElementById("serv-nome").value;
+        
+        const nomeInput = document.getElementById("serv-nome");
         const fileInput = document.getElementById("serv-img-file");
-        const preco = document.getElementById("serv-preco").value;
-        const descricao = document.getElementById("serv-desc").value;
-        const tempoCarrossel = document.getElementById("serv-tempo").value || 4;
+        const precoInput = document.getElementById("serv-preco");
+        const descInput = document.getElementById("serv-desc");
+        const tempoInput = document.getElementById("serv-tempo");
+
+        const nome = nomeInput ? nomeInput.value.trim() : "";
+        const preco = precoInput ? precoInput.value.trim() : "";
+        const descricao = descInput ? descInput.value.trim() : "";
+        const tempoCarrossel = tempoInput ? tempoInput.value : 4;
 
         if (!fileInput || fileInput.files.length === 0) {
             alert("Por favor, selecione uma imagem para o serviço.");
@@ -43,7 +49,15 @@ function setupFormularioServico() {
 
         try {
             const imagemUrl = await converterImagemParaBase64(fileInput.files[0]);
-            await addDoc(collection(db, "servicos"), { nome, imagemUrl, preco, descricao, tempoCarrossel });
+            
+            await addDoc(collection(db, "servicos"), { 
+                nome: nome, 
+                imagemUrl: imagemUrl, 
+                preco: preco, 
+                descricao: descricao, 
+                tempoCarrossel: tempoCarrossel 
+            });
+
             alert("Serviço adicionado com sucesso!");
             serviceForm.reset();
             carregarServicosAdmin();
