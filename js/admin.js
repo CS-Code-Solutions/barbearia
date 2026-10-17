@@ -1,6 +1,6 @@
 import { auth, db } from "./firebase-init.js";
 import { signInWithEmailAndPassword, signInWithRedirect, getRedirectResult, GoogleAuthProvider, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, getDoc, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const loginScreen = document.getElementById("login-screen");
 const adminPanel = document.getElementById("admin-panel");
@@ -8,53 +8,58 @@ const loginForm = document.getElementById("login-form");
 const googleLoginBtn = document.getElementById("btn-google-login");
 const logoutBtn = document.getElementById("logout-btn");
 
-// Tratar o resultado após o redirecionamento da Conta Google
 getRedirectResult(auth).catch((error) => {
     console.error("Erro no redirecionamento do Google:", error);
 });
 
-// Monitorizar autenticação e validar dinamicamente na coleção 'barbeiros' do Firestore
+// Monitorizar autenticação e validar níveis de acesso dinamicamente
 onAuthStateChanged(auth, async (user) => {
     if (user) {
         const emailUtilizador = user.email ? user.email.trim().toLowerCase() : "";
-        console.log("Tentativa de login com o e-mail:", emailUtilizador);
 
         try {
-            const barbeirosRef = collection(db, "barbeiros");
-            const barbeirosSnap = await getDocs(barbeirosRef);
-            
-            let autorizado = false;
-            let perfilUtilizador = "admin";
-            let podeEditarGlobal = true;
+            // 1. Verifica se é Administrador Principal
+            const adminDocRef = doc(db, "barbeiros", "rg_allowed_emails");
+            const adminDocSnap = await getDoc(adminDocRef);
 
-            barbeirosSnap.forEach(docItem => {
-                const b = docItem.data();
-                // Verifica se o e-mail está presente no documento (seja no campo 'email' ou num array)
-                if (b.email) {
-                    const emailCadastrado = String(b.email).trim().toLowerCase();
-                    if (emailCadastrado === emailUtilizador) {
-                        autorizado = true;
-                        perfilUtilizador = b.perfil ? String(b.perfil).trim().toLowerCase() : "admin";
-                        podeEditarGlobal = b.podeEditar !== undefined ? Boolean(b.podeEditar) : true;
-                    }
+            let isAdmin = false;
+            if (adminDocSnap.exists()) {
+                const listaAdmins = adminDocSnap.data().content || [];
+                isAdmin = listaAdmins.some(e => String(e).trim().toLowerCase() === emailUtilizador);
+            }
+
+            let isBarbeiro = false;
+            let podeEditarGlobal = false;
+
+            if (isAdmin) {
+                podeEditarGlobal = true;
+            } else {
+                // 2. Se não for admin, verifica se é utilizador restrito / barbeiro
+                const barbeiroDocRef = doc(db, "barbeiros", "rg_barbeiros_emails");
+                const barbeiroDocSnap = await getDoc(barbeiroDocRef);
+
+                if (barbeiroDocSnap.exists()) {
+                    const listaBarbeiros = barbeiroDocSnap.data().content || [];
+                    isBarbeiro = listaBarbeiros.some(e => String(e).trim().toLowerCase() === emailUtilizador);
                 }
-            });
 
-            if (!autorizado) {
-                alert(`O e-mail (${user.email}) não foi encontrado ou autorizado na coleção 'barbeiros' do Firestore.`);
-                await signOut(auth);
-                return;
+                if (!isBarbeiro) {
+                    alert(`O e-mail (${user.email}) não está autorizado a aceder ao painel.`);
+                    await signOut(auth);
+                    return;
+                }
+                // Utilizador restrito tem acesso para ver, mas não para gerir admins (pode ajustar conforme necessário)
+                podeEditarGlobal = false; 
             }
 
             if (loginScreen) loginScreen.style.display = "none";
             if (adminPanel) adminPanel.style.display = "block";
             
-            const isAdmin = (perfilUtilizador === "admin");
             carregarPainelAdministrativo(isAdmin, podeEditarGlobal, user);
 
         } catch (error) {
-            console.error("Erro ao consultar o Firestore:", error);
-            alert("Erro ao validar autorização na base de dados: " + error.message);
+            console.error("Erro ao validar autorização:", error);
+            alert("Erro ao validar permissões na base de dados.");
             await signOut(auth);
         }
     } else {
@@ -63,13 +68,11 @@ onAuthStateChanged(auth, async (user) => {
     }
 });
 
-// Login com E-mail e Senha
 if (loginForm) {
     loginForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const email = document.getElementById("login-email").value.trim();
         const senha = document.getElementById("login-password").value.trim();
-
         try {
             await signInWithEmailAndPassword(auth, email, senha);
         } catch (error) {
@@ -78,7 +81,6 @@ if (loginForm) {
     });
 }
 
-// Login com Conta Google via Redirecionamento
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
         const provider = new GoogleAuthProvider();
@@ -98,29 +100,14 @@ if (logoutBtn) {
 }
 
 function carregarPainelAdministrativo(isAdmin, podeEditarGlobal, user) {
+    // Se não for admin, esconde a secção de gestão de equipa/utilizadores
     const sectionBarbeiros = document.getElementById("section-barbeiros");
     if (sectionBarbeiros) {
         sectionBarbeiros.style.display = isAdmin ? "block" : "none";
     }
 
-    const barberForm = document.getElementById("barber-form");
-    if (isAdmin && barberForm) {
-        barberForm.onsubmit = async (e) => {
-            e.preventDefault();
-            const nome = document.getElementById("barber-nome").value;
-            const email = document.getElementById("barber-email").value.trim();
-            const perfil = document.getElementById("barber-perfil").value;
-            const podeEditar = document.getElementById("barber-pode-editar").checked;
-
-            try {
-                await addDoc(collection(db, "barbeiros"), { nome, email, perfil, podeEditar });
-                alert("Utilizador/Barbeiro autorizado com sucesso!");
-                barberForm.reset();
-                carregarBarbeirosAdmin(isAdmin);
-            } catch (err) {
-                alert("Erro ao registar utilizador.");
-            }
-        };
+    if (isAdmin) {
+        setupFormularioBarbeiro();
     }
 
     setupFormularioServico(isAdmin);
@@ -134,44 +121,33 @@ function carregarPainelAdministrativo(isAdmin, podeEditarGlobal, user) {
     carregarAgendamentosAdmin(user.email, podeEditarGlobal);
 }
 
+function setupFormularioBarbeiro() {
+    const barberForm = document.getElementById("barber-form");
+    if (!barberForm) return;
+
+    barberForm.onsubmit = async (e) => {
+        e.preventDefault();
+        alert("Para gerir acessos, adicione os e-mails diretamente nos arrays do Firestore (rg_allowed_emails ou rg_barbeiros_emails).");
+    };
+}
+
 async function carregarBarbeirosAdmin(isAdmin) {
     const listContainer = document.getElementById("admin-barbers-list");
     if (!listContainer) return;
 
     try {
-        const querySnapshot = await getDocs(collection(db, "barbeiros"));
-        listContainer.innerHTML = "";
+        const docRef = doc(db, "barbeiros", "rg_allowed_emails");
+        const docSnap = await getDoc(docRef);
+        listContainer.innerHTML = "<h4>Administradores Principais:</h4>";
 
-        if (querySnapshot.empty) {
-            listContainer.innerHTML = "<p style='color:#666;'>Nenhum utilizador registado.</p>";
-            return;
-        }
-
-        querySnapshot.forEach((docItem) => {
-            const b = docItem.data();
-            listContainer.innerHTML += `
-                <div style="background:#f8f9fa; padding:10px; margin-bottom:6px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <strong>${b.nome || 'Utilizador'}</strong> (${b.email}) - <span style="text-transform:uppercase; font-size:0.8rem; background:#1a1a1a; color:white; padding:2px 6px; border-radius:3px;">${b.perfil || 'admin'}</span><br>
-                        <small style="color:${b.podeEditar !== false ? 'green' : 'red'};">${b.podeEditar !== false ? '✔ Pode editar agendamentos' : '✖ Sem permissão de edição'}</small>
-                    </div>
-                    ${isAdmin ? `<button data-id="${docItem.id}" class="btn-del-barber" style="background:#dc3545; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Excluir</button>` : ''}
-                </div>
-            `;
-        });
-
-        if (isAdmin) {
-            document.querySelectorAll(".btn-del-barber").forEach(btn => {
-                btn.addEventListener("click", async () => {
-                    if (confirm("Deseja mesmo remover este acesso?")) {
-                        await deleteDoc(doc(db, "barbeiros", btn.getAttribute("data-id")));
-                        carregarBarbeirosAdmin(isAdmin);
-                    }
-                });
+        if (docSnap.exists()) {
+            const emails = docSnap.data().content || [];
+            emails.forEach(email => {
+                listContainer.innerHTML += `<div style="background:#f8f9fa; padding:8px; margin-bottom:4px; border-radius:4px;">👑 ${email} (Admin Total)</div>`;
             });
         }
     } catch (e) {
-        console.error("Erro ao carregar utilizadores:", e);
+        console.error("Erro ao carregar lista:", e);
     }
 }
 
@@ -382,7 +358,7 @@ async function carregarAgendamentosAdmin(userEmail, podeEditarGlobal) {
                         <input type="datetime-local" id="novo-dh-${docId}" style="padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;">
                         <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
                     </div>
-                    ` : '<p style="font-size:0.8rem; color:#888; margin-top:5px;">A sua conta não tem permissão para editar horários.</p>'}
+                    ` : '<p style="font-size:0.8rem; color:#888; margin-top:5px;">A sua conta tem acesso restrito e não pode alterar horários.</p>'}
                 </div>
             `;
         });
