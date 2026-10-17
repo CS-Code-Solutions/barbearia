@@ -1,8 +1,8 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, getDoc, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, setDoc, onSnapshot, deleteDoc, doc, serverTimestamp, query, where, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 const servicosCarrosselContainer = document.getElementById("servicos-carrossel-container");
-const modalServiceSelect = document.getElementById("modal-service-select");
+const servicesCheckboxContainer = document.getElementById("services-checkbox-container");
 const modalBookingForm = document.getElementById("modal-booking-form");
 const scheduleColumnsContainer = document.getElementById("schedule-columns");
 const barberSelectionContainer = document.getElementById("barber-selection-container");
@@ -30,13 +30,11 @@ function gerarCodigoUnico() {
     return codigo;
 }
 
-// Converte horário "HH:MM" em minutos totais desde 00:00
 function tempoParaMinutos(horaStr) {
     const [h, m] = horaStr.split(':').map(Number);
     return h * 60 + m;
 }
 
-// Converte minutos totais em "HH:MM"
 function minutosParaTempo(minTotal) {
     const h = Math.floor(minTotal / 60);
     const m = minTotal % 60;
@@ -47,7 +45,7 @@ async function carregarPaginaPublica() {
     // 1. Carregar Serviços
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
-        if (modalServiceSelect) modalServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
+        if (servicesCheckboxContainer) servicesCheckboxContainer.innerHTML = "";
         if (servicosCarrosselContainer) servicosCarrosselContainer.innerHTML = "";
         servicosMapGlobal = {};
         
@@ -82,8 +80,13 @@ async function carregarPaginaPublica() {
                     </div>
                 `;
 
-                if (modalServiceSelect) {
-                    modalServiceSelect.innerHTML += `<option value="${servicoId}">${nomeServico} - R$ ${precoServico} (${duracaoMinutos} min)</option>`;
+                if (servicesCheckboxContainer) {
+                    servicesCheckboxContainer.innerHTML += `
+                        <label class="service-checkbox-item">
+                            <input type="checkbox" name="servicos" value="${servicoId}">
+                            <span>${nomeServico} - R$ ${precoServico} (${duracaoMinutos} min)</span>
+                        </label>
+                    `;
                 }
             });
 
@@ -92,12 +95,16 @@ async function carregarPaginaPublica() {
                 servicosCarrosselContainer.innerHTML = `<div class="servicos-carrossel-wrapper">${trackHTML}</div>`;
                 iniciarLogicaCarrossel(tempoTransicao);
             }
+        } else {
+            if (servicesCheckboxContainer) {
+                servicesCheckboxContainer.innerHTML = "<p style='color:#888; text-align:center;'>Nenhum serviço registado.</p>";
+            }
         }
     } catch (e) {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // 2. Carregar Barbeiros (Primeiro passo do agendamento)
+    // 2. Carregar Barbeiros
     try {
         const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
         if (barberSelectionContainer) {
@@ -175,12 +182,20 @@ function iniciarCalendarioTempoReal() {
             snapshotAgendamentos.forEach(doc => {
                 const data = doc.data();
                 if (data.status !== "Cancelado" && data.barbeiroNome === barbeiroSelecionadoGlobal) {
-                    // Guarda o slot inicial e duração em minutos do serviço agendado
-                    let duracao = 30;
-                    if (data.servicoId && servicosMapGlobal[data.servicoId]) {
-                        duracao = servicosMapGlobal[data.servicoId].duracaoMinutos || 30;
+                    let duracaoTotal = 0;
+                    // Suporta tanto array de serviços quanto serviço único antigo
+                    const listaServicos = data.servicosIds || (data.servicoId ? [data.servicoId] : []);
+                    
+                    if (listaServicos.length > 0) {
+                        listaServicos.forEach(sId => {
+                            if (servicosMapGlobal[sId]) {
+                                duracaoTotal += servicosMapGlobal[sId].duracaoMinutos;
+                            }
+                        });
                     }
-                    horariosOcupadosGlobal.push({ dataHora: data.dataHora, duracao: duracao });
+                    if (duracaoTotal === 0) duracaoTotal = Number(data.duracaoTotal) || 30;
+
+                    horariosOcupadosGlobal.push({ dataHora: data.dataHora, duracao: duracaoTotal });
                 }
             });
 
@@ -205,7 +220,6 @@ function construirColunasCalendario(ocupados, bloqueados) {
     if (!scheduleColumnsContainer) return;
     scheduleColumnsContainer.innerHTML = "";
 
-    // Horários de 15 em 15 minutos (excluindo almoço das 12:00 às 13:00)
     const horariosDisponiveis = [
         "09:00", "09:15", "09:30", "09:45",
         "10:00", "10:15", "10:30", "10:45",
@@ -219,7 +233,6 @@ function construirColunasCalendario(ocupados, bloqueados) {
         "19:00"
     ];
 
-    // Mapear todos os horários individuais que estão ocupados com base na duração dos serviços
     const slotsOcupadosSet = new Set();
     ocupados.forEach(item => {
         const [dataYMD, horaHM] = item.dataHora.split('T');
@@ -310,7 +323,29 @@ if (modalBookingForm) {
         e.preventDefault();
         const clienteNome = document.getElementById("modal-client-name").value;
         const clienteTelefone = document.getElementById("modal-client-phone").value;
-        const servicoId = modalServiceSelect.value;
+        
+        // Obter todos os serviços selecionados via checkbox
+        const checkboxes = document.querySelectorAll('input[name="servicos"]:checked');
+        if (checkboxes.length === 0) {
+            alert("Selecione pelo menos um serviço.");
+            return;
+        }
+
+        const servicosIds = [];
+        let duracaoTotal = 0;
+        let precoTotal = 0;
+        const nomesServicos = [];
+
+        checkboxes.forEach(cb => {
+            const sId = cb.value;
+            servicosIds.push(sId);
+            if (servicosMapGlobal[sId]) {
+                duracaoTotal += servicosMapGlobal[sId].duracaoMinutos;
+                precoTotal += Number(servicosMapGlobal[sId].preco) || 0;
+                nomesServicos.push(servicosMapGlobal[sId].nome);
+            }
+        });
+
         const barbeiroNome = barbeiroSelecionadoGlobal;
         const dataHora = horarioSelecionadoGlobal;
 
@@ -326,7 +361,10 @@ if (modalBookingForm) {
             await setDoc(agendamentoDocRef, {
                 clienteNome,
                 clienteTelefone,
-                servicoId,
+                servicosIds,
+                nomesServicos: nomesServicos.join(", "),
+                duracaoTotal,
+                precoTotal: precoTotal.toFixed(2),
                 barbeiroNome,
                 dataHora,
                 codigoUnico,
@@ -421,11 +459,13 @@ function injetarSecaoGerenciarAgendamento() {
                 const agendamento = docItem.data();
                 const docId = docItem.id;
                 const dataHoraOriginal = agendamento.dataHora || '';
+                const servicosTexto = agendamento.nomesServicos || 'Serviço';
 
                 resultadoDiv.innerHTML = `
                     <div style="background:#1a1a1a; padding:15px; border-radius:8px; border:1px solid #333; color:#ccc;">
                         <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
                         <p><strong>Barbeiro:</strong> ${agendamento.barbeiroNome || 'Qualquer'}</p>
+                        <p><strong>Serviço(s):</strong> ${servicosTexto}</p>
                         <p><strong>Data/Hora Atual:</strong> ${dataHoraOriginal.replace('T', ' às ')}</p>
                         <p><strong>Estado:</strong> ${agendamento.status || 'Confirmado'}</p>
                         
