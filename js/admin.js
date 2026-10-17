@@ -15,7 +15,6 @@ document.addEventListener("DOMContentLoaded", () => {
     setupFormularioBarbeiro();
 });
 
-// Função auxiliar para converter ficheiro em Base64
 function converterImagemParaBase64(file) {
     return new Promise((resolve, reject) => {
         const reader = new FileReader();
@@ -35,11 +34,13 @@ function setupFormularioServico() {
         const nomeInput = document.getElementById("serv-nome");
         const fileInput = document.getElementById("serv-img-file");
         const precoInput = document.getElementById("serv-preco");
+        const duracaoInput = document.getElementById("serv-duracao");
         const descInput = document.getElementById("serv-desc");
         const tempoInput = document.getElementById("serv-tempo");
 
         const nome = nomeInput ? nomeInput.value.trim() : "";
         const preco = precoInput ? precoInput.value.trim() : "";
+        const duracaoMinutos = duracaoInput ? Number(duracaoInput.value) : 30;
         const descricao = descInput ? descInput.value.trim() : "";
         const tempoCarrossel = tempoInput ? tempoInput.value : 4;
 
@@ -55,6 +56,7 @@ function setupFormularioServico() {
                 nome: nome, 
                 imagemUrl: imagemUrl, 
                 preco: preco, 
+                duracaoMinutos: duracaoMinutos,
                 descricao: descricao, 
                 tempoCarrossel: tempoCarrossel 
             });
@@ -110,8 +112,9 @@ async function carregarServicosAdmin() {
 
         querySnapshot.forEach((docItem) => {
             const s = docItem.data();
-            const nomeServico = s.nome || s.titulo || "Serviço sem nome";
+            const nomeServico = s.nome || "Serviço sem nome";
             const precoServico = s.preco || "0.00";
+            const duracaoMinutos = s.duracaoMinutos || 30;
             const descServico = s.descricao || "";
             const imagemServico = s.imagemUrl || 'https://via.placeholder.com/100';
 
@@ -120,9 +123,9 @@ async function carregarServicosAdmin() {
                     <img src="${imagemServico}" alt="${nomeServico}" style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc;">
                     <div style="flex:1;">
                         <h4 style="margin:0 0 5px 0; color:#1a1a1a;">${nomeServico} - <span style="color:#d4af37;">R$ ${precoServico}</span></h4>
+                        <p style="margin:0 0 5px 0; font-size:0.85rem; color:#444;"><strong>Duração:</strong> ${duracaoMinutos} min</p>
                         <p style="margin:0 0 8px 0; font-size:0.85rem; color:#666;">${descServico}</p>
                         <div style="display:flex; gap:8px;">
-                            <button class="btn-editar-servico" data-id="${docItem.id}" data-nome="${nomeServico}" data-preco="${precoServico}" data-desc="${descServico}" style="background:#ffc107; color:#1a1a1a; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Editar</button>
                             <button class="btn-del-service" data-id="${docItem.id}" style="background:#dc3545; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
                         </div>
                     </div>
@@ -141,17 +144,6 @@ async function carregarServicosAdmin() {
                         alert("Erro ao excluir serviço.");
                     }
                 }
-            });
-        });
-
-        document.querySelectorAll(".btn-editar-servico").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.getElementById("serv-nome").value = btn.getAttribute("data-nome");
-                document.getElementById("serv-preco").value = btn.getAttribute("data-preco");
-                document.getElementById("serv-desc").value = btn.getAttribute("data-desc");
-
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                alert("Altere os dados no formulário acima.");
             });
         });
 
@@ -294,7 +286,6 @@ async function carregarBarbeirosAdmin() {
                         <p style="margin:0; font-size:0.85rem; color:#888;">${emailBarbeiro} | Edição permitida: ${podeEditar ? 'Sim' : 'Não'}</p>
                     </div>
                     <div style="display:flex; gap:8px;">
-                        <button class="btn-editar-barbeiro" data-id="${docId}" data-nome="${nomeBarbeiro}" data-email="${emailBarbeiro}" data-perfil="${perfilBarbeiro}" data-podeeditar="${podeEditar}" style="background:#ffc107; color:#1a1a1a; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Editar</button>
                         <button class="btn-del-barbeiro" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
                     </div>
                 </div>
@@ -312,18 +303,6 @@ async function carregarBarbeirosAdmin() {
                         alert("Erro ao excluir utilizador: " + err.message);
                     }
                 }
-            });
-        });
-
-        document.querySelectorAll(".btn-editar-barbeiro").forEach(btn => {
-            btn.addEventListener("click", () => {
-                document.getElementById("barber-nome").value = btn.getAttribute("data-nome");
-                document.getElementById("barber-email").value = btn.getAttribute("data-email");
-                document.getElementById("barber-perfil").value = btn.getAttribute("data-perfil");
-                document.getElementById("barber-pode-editar").checked = btn.getAttribute("data-podeeditar") === "true";
-
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-                alert("Altere os dados no formulário acima e clique em salvar.");
             });
         });
 
