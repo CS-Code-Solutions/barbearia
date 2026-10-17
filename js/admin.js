@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 console.log("admin.js iniciado com sucesso!");
 
@@ -11,11 +11,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     await carregarCacheServicos();
     await carregarBarbeirosAdmin();
+    await carregarRegrasAdmin();
     carregarAgendamentosAdmin();
     carregarParceirosAdmin();
     carregarDestaquesAdmin();
     setupFormularioServico();
     setupFormularioBarbeiro();
+    setupFormularioRegras();
     
     const filtroBarbeiroSelect = document.getElementById("filtro-barbeiro-admin");
     if (filtroBarbeiroSelect) {
@@ -35,6 +37,43 @@ async function carregarCacheServicos() {
     } catch (e) {
         console.error("Erro ao carregar serviços:", e);
     }
+}
+
+async function carregarRegrasAdmin() {
+    try {
+        const docSnap = await getDoc(doc(db, "configuracoes", "regras"));
+        if (docSnap.exists()) {
+            const data = docSnap.data();
+            document.getElementById("regra-horas-cancelar").value = data.horasCancelar ?? 2;
+            document.getElementById("regra-horas-reagendar").value = data.horasReagendar ?? 2;
+            document.getElementById("regra-whatsapp-suporte").value = data.whatsappSuporte ?? "";
+        }
+    } catch (e) {
+        console.error("Erro ao carregar regras:", e);
+    }
+}
+
+function setupFormularioRegras() {
+    const regrasForm = document.getElementById("regras-form");
+    if (!regrasForm) return;
+
+    regrasForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const horasCancelar = Number(document.getElementById("regra-horas-cancelar").value);
+        const horasReagendar = Number(document.getElementById("regra-horas-reagendar").value);
+        const whatsappSuporte = document.getElementById("regra-whatsapp-suporte").value.trim();
+
+        try {
+            await setDoc(doc(db, "configuracoes", "regras"), {
+                horasCancelar,
+                horasReagendar,
+                whatsappSuporte
+            });
+            alert("Regras guardadas com sucesso!");
+        } catch (err) {
+            alert("Erro ao guardar regras: " + err.message);
+        }
+    };
 }
 
 function converterImagemParaBase64(file) {
@@ -273,7 +312,6 @@ function renderizarListaAgendamentos(lista) {
         const dataHoraOriginal = a.dataHora || '';
         if (!dataHoraOriginal) return;
 
-        // Calcular duração total
         let duracaoMin = 30;
         const listaServicos = a.servicosIds || (a.servicoId ? [a.servicoId] : []);
         if (listaServicos.length > 0) {
@@ -289,19 +327,16 @@ function renderizarListaAgendamentos(lista) {
         const inicioMs = new Date(dataHoraOriginal).getTime();
         const fimMs = inicioMs + (duracaoMin * 60000);
 
-        // Se o horário final já passou, está concluído e sai da tela
         if (agora > fimMs) return;
 
-        // Verificar filtro por barbeiro
         if (filtroBarbeiro && a.barbeiroNome !== filtroBarbeiro) return;
 
-        // Determinar status dinâmico ("Em atendimento" ou "Confirmado")
         let statusDinamico = "Confirmado";
         let statusBadgeStyle = "background: #28a745; color: white;";
         
         if (agora >= inicioMs && agora <= fimMs) {
             statusDinamico = "Em atendimento";
-            statusBadgeStyle = "background: #ffc107; color: #1a1a1a; font-weight: bold; animation: pulse 1.5s infinite;";
+            statusBadgeStyle = "background: #ffc107; color: #1a1a1a; font-weight: bold;";
         }
 
         listaFiltrada.push({ ...a, statusDinamico, statusBadgeStyle, dataHoraOriginal });
@@ -315,7 +350,7 @@ function renderizarListaAgendamentos(lista) {
     listaFiltrada.forEach(a => {
         const docId = a.id;
         const dataHoraOriginal = a.dataHoraOriginal;
-        const servicosTexto = a.nomesServicos || 'Serviço';
+        const servicosTexto = (a.nomesServicos || 'Serviço').replace(/,\s*/g, ' + ');
         
         let dataHoraTexto = 'Data não definida';
         if (dataHoraOriginal) {
