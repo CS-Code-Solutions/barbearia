@@ -147,18 +147,10 @@
             height: auto;
         }
 
-        /* Adaptação Responsiva para Telemóveis (Mobile) */
         @media (max-width: 768px) {
-            .site-header {
-                padding: 1rem;
-            }
-            .header-left {
-                width: 100%;
-                justify-content: space-between;
-            }
-            .hamburger {
-                display: block;
-            }
+            .site-header { padding: 1rem; }
+            .header-left { width: 100%; justify-content: space-between; }
+            .hamburger { display: block; }
             .nav-links {
                 display: none;
                 flex-direction: column;
@@ -172,52 +164,25 @@
                 text-align: center;
                 border-bottom: 1px solid #222;
             }
-            .nav-links.active {
-                display: flex;
-            }
-            .nav-links a {
-                padding: 10px 0;
-                width: 100%;
-            }
-            .btn-header-agendar {
-                display: none; /* Oculta botão extra no header mobile para poupar espaço */
-            }
-
-            /* Logótipo em cima do texto no mobile */
+            .nav-links.active { display: flex; }
+            .nav-links a { padding: 10px 0; width: 100%; }
+            .btn-header-agendar { display: none; }
             .hero-section {
                 flex-direction: column-reverse;
                 text-align: center;
                 padding: 40px 15px;
                 gap: 30px;
             }
-            .hero-content {
-                text-align: center;
-            }
-            .hero-title {
-                font-size: 2.3rem;
-            }
-            .hero-buttons {
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            .hero-image-right {
-                max-width: 280px;
-                margin: 0 auto;
-            }
+            .hero-content { text-align: center; }
+            .hero-title { font-size: 2.3rem; }
+            .hero-buttons { justify-content: center; flex-wrap: wrap; }
+            .hero-image-right { max-width: 280px; margin: 0 auto; }
         }
 
-        .section {
-            padding: 60px 20px;
-        }
-        .bg-alt {
-            background-color: #121212;
-        }
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-        }
+        .section { padding: 60px 20px; }
+        .bg-alt { background-color: #121212; }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        /* Booking Card Estilo Dark */
         .booking-card {
             background: #141414;
             padding: 40px;
@@ -233,40 +198,16 @@
             text-align: center;
             font-family: Georgia, serif;
             font-size: 2.2rem;
-            margin-bottom: 30px;
+            margin-bottom: 10px;
         }
-        .form-label-custom {
-            color: #888;
-            font-size: 0.75rem;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px;
-        }
-        form input, form select {
-            width: 100%;
-            padding: 14px;
-            margin: 5px 0 20px 0;
-            background-color: #1a1a1a;
-            border: 1px solid #333;
-            border-radius: 8px;
-            color: #fff;
-            box-sizing: border-box;
-            font-size: 0.95rem;
-        }
-        form input:focus, form select:focus {
-            border-color: #d4af37;
-            outline: none;
-        }
-
+        
         /* Calendário colunas */
         .schedule-columns-container {
             display: flex;
             gap: 15px;
             overflow-x: auto;
             padding-bottom: 15px;
-            margin-top: 15px;
+            margin-top: 20px;
         }
         .date-column {
             background: #181818;
@@ -305,11 +246,7 @@
         .slot-btn.available:hover {
             border-color: #d4af37;
             color: #d4af37;
-        }
-        .slot-btn.selected {
-            background-color: #d4af37;
-            color: #0d0d0d;
-            border-color: #d4af37;
+            background-color: #1f1f1f;
         }
         .slot-btn.busy {
             background-color: #111;
@@ -317,6 +254,70 @@
             border-color: #1a1a1a;
             cursor: not-allowed;
         }
+
+        /* Modal Flutuante */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .modal-content {
+            background: #141414;
+            border: 1px solid #d4af37;
+            padding: 30px;
+            border-radius: 16px;
+            max-width: 450px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            position: relative;
+        }
+        .modal-content h3 {
+            color: #d4af37;
+            margin-top: 0;
+            font-family: Georgia, serif;
+            text-align: center;
+        }
+        .form-label-custom {
+            color: #888;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 5px;
+            margin-top: 15px;
+        }
+        .modal-content input, .modal-content select {
+            width: 100%;
+            padding: 12px;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            color: #fff;
+            box-sizing: border-box;
+            font-size: 0.95rem;
+        }
+        .modal-content input:focus, .modal-content select:focus {
+            border-color: #d4af37;
+            outline: none;
+        }
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+        .modal-close:hover { color: #fff; }
 
         /* Carrossel Vertical Estilo Instagram */
         .servicos-carrossel-wrapper {
@@ -353,24 +354,14 @@
         }
         .servicos-slide-caption {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
+            bottom: 0; left: 0; width: 100%;
             background: linear-gradient(transparent, rgba(0, 0, 0, 0.9));
             color: white;
             padding: 20px 15px;
             box-sizing: border-box;
         }
-        .servicos-slide-caption h3 {
-            margin: 0 0 5px 0;
-            color: #d4af37;
-            font-size: 1.2rem;
-        }
-        .servicos-slide-caption p {
-            margin: 0;
-            font-size: 0.85rem;
-            color: #aaa;
-        }
+        .servicos-slide-caption h3 { margin: 0 0 5px 0; color: #d4af37; font-size: 1.2rem; }
+        .servicos-slide-caption p { margin: 0; font-size: 0.85rem; color: #aaa; }
 
         footer {
             background-color: #080808;
@@ -401,14 +392,13 @@
         <button class="hamburger" id="hamburger-btn">&#9776;</button>
     </header>
 
-    <!-- Hero Banner Principal -->
     <section class="hero-section">
         <div class="hero-content">
             <div class="hero-subtitle">BARBEARIA GOMES · DESDE A TRADIÇÃO</div>
             <h1 class="hero-title">O corte certo, no seu tempo.</h1>
-            <p class="hero-desc">Atendimento clássico, técnica moderna e um ambiente feito para você relaxar. Escolha o serviço, o barbeiro e o horário — tudo online.</p>
+            <p class="hero-desc">Atendimento clássico, técnica moderna e um ambiente feito para você relaxar. Escolha o horário diretamente abaixo.</p>
             <div class="hero-buttons">
-                <a href="#agendar" class="btn-primary-custom">Agendar agora</a>
+                <a href="#agendar" class="btn-primary-custom">Escolher horário</a>
                 <a href="#servicos" class="btn-outline-custom link-menu-servicos">Ver serviços</a>
             </div>
         </div>
@@ -417,41 +407,49 @@
         </div>
     </section>
 
-    <!-- Seção de Agendamento Online -->
+    <!-- Seção de Agendamento por Horários -->
     <section id="agendar" class="section bg-alt">
         <div class="container">
             <div class="booking-card">
-                <div style="text-align:center; color:#d4af37; font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; font-weight:bold; margin-bottom:10px;">AGENDAMENTO ONLINE</div>
-                <h2>Reserve sua cadeira</h2>
-                <form id="public-booking-form">
-                    <label class="form-label-custom">Nome Completo</label>
-                    <input type="text" id="pub-client-name" placeholder="Seu nome" required>
-
-                    <label class="form-label-custom">WhatsApp / Telefone</label>
-                    <input type="tel" id="pub-client-phone" placeholder="(00) 00000-0000" required>
-
-                    <label class="form-label-custom">Serviço</label>
-                    <select id="pub-service-select" required>
-                        <option value="">Selecione o Serviço</option>
-                    </select>
-
-                    <label class="form-label-custom">Barbeiro</label>
-                    <select id="pub-barber-select">
-                        <option value="">Qualquer Barbeiro Disponível</option>
-                    </select>
-
-                    <label style="color:#d4af37; font-size:0.9rem; font-weight:bold; display: block; margin-top: 25px; margin-bottom: 10px;">Escolha a data e o horário</label>
-                    <div id="schedule-columns" class="schedule-columns-container"></div>
-
-                    <input type="hidden" id="selected-datetime" required>
-
-                    <button type="submit" class="btn-primary-custom" style="width:100%; margin-top:25px; padding:15px; font-size:1rem;">Confirmar agendamento</button>
-                </form>
+                <div style="text-align:center; color:#d4af37; font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">AGENDA ONLINE</div>
+                <h2>Selecione um Horário</h2>
+                <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom:20px;">Clique num horário disponível para abrir o formulário de reserva.</p>
+                
+                <div id="schedule-columns" class="schedule-columns-container"></div>
             </div>
         </div>
     </section>
 
-    <!-- Seção de Nossos Serviços (Carrossel Vertical) -->
+    <!-- Modal Flutuante de Confirmação de Agendamento -->
+    <div id="modal-booking" class="modal-overlay">
+        <div class="modal-content">
+            <button class="modal-close" id="btn-close-modal">&times;</button>
+            <h3>Concluir Reserva</h3>
+            <p id="modal-selected-time-label" style="text-align:center; color:#d4af37; font-weight:bold; margin-bottom:20px;"></p>
+            
+            <form id="modal-booking-form">
+                <label class="form-label-custom">Nome Completo</label>
+                <input type="text" id="modal-client-name" placeholder="Seu nome" required>
+
+                <label class="form-label-custom">WhatsApp / Telefone</label>
+                <input type="tel" id="modal-client-phone" placeholder="(00) 00000-0000" required>
+
+                <label class="form-label-custom">Serviço</label>
+                <select id="modal-service-select" required>
+                    <option value="">Selecione o Serviço</option>
+                </select>
+
+                <label class="form-label-custom">Barbeiro</label>
+                <select id="modal-barber-select">
+                    <option value="">Qualquer Barbeiro Disponível</option>
+                </select>
+
+                <button type="submit" class="btn-primary-custom" style="width:100%; margin-top:25px; padding:14px; font-size:1rem;">Confirmar agendamento</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Seção de Nossos Serviços -->
     <section id="servicos" class="section" style="display: none;">
         <div class="container" style="text-align: center;">
             <h2 style="font-family:Georgia, serif; font-size:2rem; margin-bottom:30px;">Nossos Serviços</h2>
