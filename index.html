@@ -145,15 +145,15 @@
             margin-top: 10px;
         }
 
-        /* Estilo do Carrossel de Serviços */
+       /* Estilo do Carrossel de Serviços em formato Vertical (Estilo Instagram/Reels) */
         .servicos-carrossel-wrapper {
             position: relative;
-            max-width: 800px;
+            max-width: 380px; /* Largura reduzida para dar formato vertical */
             margin: 0 auto;
             overflow: hidden;
-            border-radius: 12px;
-            box-shadow: 0 6px 15px rgba(0,0,0,0.15);
-            background: #1a1a1a;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            background: #111;
         }
         .servicos-carrossel-track {
             display: flex;
@@ -165,11 +165,16 @@
             cursor: pointer;
             position: relative;
             text-align: center;
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 580px; /* Altura maior para o formato vertical estilo Instagram */
         }
         .servicos-slide img {
             width: 100%;
-            height: 380px;
-            object-fit: cover;
+            height: 100%;
+            object-fit: cover; /* Preenche perfeitamente o espaço vertical sem distorcer */
             display: block;
         }
         .servicos-slide-caption {
@@ -177,10 +182,12 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(0, 0, 0, 0.75);
+            background: linear-gradient(transparent, rgba(0, 0, 0, 0.85));
             color: white;
-            padding: 15px;
+            padding: 20px 15px;
             box-sizing: border-box;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 16px;
         }
         .servicos-slide-caption h3 {
             margin: 0 0 5px 0;
@@ -189,10 +196,9 @@
         }
         .servicos-slide-caption p {
             margin: 0;
-            font-size: 0.95rem;
+            font-size: 0.9rem;
             color: #ddd;
         }
-
         /* Janela Flutuante (Modal) de Detalhes do Serviço */
         #modal-servico-detalhe {
             position: fixed;
