@@ -1,19 +1,38 @@
-async function carregarAgendamentosAdmin(userEmail, podeEditarGlobal) {
-    const appContainer = document.getElementById("admin-appointments-list");
-    if (!appContainer) return;
+import { db } from "./firebase-init.js";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    appContainer.innerHTML = "<p style='color:#007bff;'>A ligar ao Firestore para buscar agendamentos...</p>";
+console.log("admin.js iniciado com sucesso!");
+
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("DOM totalmente carregado. A iniciar painel...");
+    
+    // Força o carregamento direto
+    carregarAgendamentosAdmin();
+    carregarServicosAdmin();
+    carregarParceirosAdmin();
+    carregarDestaquesAdmin();
+    carregarBarbeirosAdmin();
+});
+
+async function carregarAgendamentosAdmin() {
+    const appContainer = document.getElementById("admin-appointments-list");
+    if (!appContainer) {
+        console.error("Elemento 'admin-appointments-list' não encontrado no HTML!");
+        return;
+    }
+
+    appContainer.innerHTML = "<p style='color:#007bff;'>A carregar agendamentos do Firestore...</p>";
 
     try {
-        const snapshot = await getDocs(collection(db, "agendamentos"));
-        
-        if (snapshot.empty) {
-            appContainer.innerHTML = "<p style='color:#666;'>A coleção 'agendamentos' está vazia na base de dados.</p>";
+        const querySnapshot = await getDocs(collection(db, "agendamentos"));
+        appContainer.innerHTML = "";
+
+        if (querySnapshot.empty) {
+            appContainer.innerHTML = "<p style='color:#666;'>Nenhum agendamento registado na base de dados.</p>";
             return;
         }
 
-        appContainer.innerHTML = "";
-        snapshot.forEach((docItem) => {
+        querySnapshot.forEach((docItem) => {
             const a = docItem.data();
             const docId = docItem.id;
             const dataHoraOriginal = a.dataHora || '';
@@ -47,7 +66,7 @@ async function carregarAgendamentosAdmin(userEmail, podeEditarGlobal) {
                 try {
                     await updateDoc(doc(db, "agendamentos", id), { dataHora: novoInput });
                     alert("Horário reagendado com sucesso!");
-                    carregarAgendamentosAdmin(userEmail, podeEditarGlobal);
+                    carregarAgendamentosAdmin();
                 } catch (err) {
                     alert("Erro ao atualizar horário: " + err.message);
                 }
@@ -56,6 +75,58 @@ async function carregarAgendamentosAdmin(userEmail, podeEditarGlobal) {
 
     } catch (e) {
         console.error("Erro crítico ao carregar agendamentos:", e);
-        appContainer.innerHTML = `<p style='color:red; font-weight:bold;'>Erro de Acesso ao Firestore: ${e.message}</p><p style='font-size:0.85rem; color:#555;'>Verifique se a coleção se chama exatamente 'agendamentos' e se as regras de segurança permitem leitura.</p>`;
+        appContainer.innerHTML = `<p style='color:red; font-weight:bold;'>Erro ao carregar agendamentos: ${e.message}</p>`;
     }
+}
+
+async function carregarServicosAdmin() {
+    const listContainer = document.getElementById("admin-services-list");
+    if (!listContainer) return;
+    try {
+        const querySnapshot = await getDocs(collection(db, "servicos"));
+        listContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum serviço registado.</p>" : "";
+        querySnapshot.forEach((docItem) => {
+            const s = docItem.data();
+            listContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${s.nome} - R$ ${s.preco}</h4></div>`;
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function carregarParceirosAdmin() {
+    const partContainer = document.getElementById("admin-partners-list");
+    if (!partContainer) return;
+    try {
+        const querySnapshot = await getDocs(collection(db, "parceiros"));
+        partContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum parceiro registado.</p>" : "";
+        querySnapshot.forEach((docItem) => {
+            const p = docItem.data();
+            partContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${p.nome}</h4></div>`;
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function carregarDestaquesAdmin() {
+    const highContainer = document.getElementById("admin-highlights-list");
+    if (!highContainer) return;
+    try {
+        const querySnapshot = await getDocs(collection(db, "destaques"));
+        highContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum destaque registado.</p>" : "";
+        querySnapshot.forEach((docItem) => {
+            const d = docItem.data();
+            highContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${d.titulo}</h4></div>`;
+        });
+    } catch (e) { console.error(e); }
+}
+
+async function carregarBarbeirosAdmin() {
+    const listContainer = document.getElementById("admin-barbers-list");
+    if (!listContainer) return;
+    try {
+        const querySnapshot = await getDocs(collection(db, "barbeiros"));
+        listContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum utilizador registado.</p>" : "";
+        querySnapshot.forEach((docItem) => {
+            const b = docItem.data();
+            listContainer.innerHTML += `<div style="background:#f8f9fa; padding:10px; margin-bottom:6px; border-radius:4px; border:1px solid #ddd;"><strong>${b.nome || 'Utilizador'}</strong> (${b.email})</div>`;
+        });
+    } catch (e) { console.error(e); }
 }
