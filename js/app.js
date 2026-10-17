@@ -3,17 +3,19 @@ import { collection, getDocs, getDoc, addDoc, setDoc, onSnapshot, deleteDoc, doc
 
 const servicosCarrosselContainer = document.getElementById("servicos-carrossel-container");
 const modalServiceSelect = document.getElementById("modal-service-select");
-const modalBarberSelect = document.getElementById("modal-barber-select");
 const modalBookingForm = document.getElementById("modal-booking-form");
 const scheduleColumnsContainer = document.getElementById("schedule-columns");
+const barberSelectionContainer = document.getElementById("barber-selection-container");
+const calendarWrapper = document.getElementById("calendar-wrapper");
+const calendarTitle = document.getElementById("calendar-title");
 
 const modalBooking = document.getElementById("modal-booking");
 const btnCloseModal = document.getElementById("btn-close-modal");
 const modalSelectedTimeLabel = document.getElementById("modal-selected-time-label");
 
-const historiaTexto = document.getElementById("historia-texto");
-
 let horarioSelecionadoGlobal = "";
+let barbeiroSelecionadoGlobal = "";
+let servicosMapGlobal = {};
 let bloqueioTemporarioId = null;
 let horariosOcupadosGlobal = [];
 let horariosBloqueadosGlobal = [];
@@ -28,16 +30,26 @@ function gerarCodigoUnico() {
     return codigo;
 }
 
-async function carregarPaginaPublica() {
-    if (historiaTexto) {
-        historiaTexto.textContent = "Fundada com a missão de resgatar a clássica barbearia tradicional...";
-    }
+// Converte horário "HH:MM" em minutos totais desde 00:00
+function tempoParaMinutos(horaStr) {
+    const [h, m] = horaStr.split(':').map(Number);
+    return h * 60 + m;
+}
 
-    // Carregar Serviços
+// Converte minutos totais em "HH:MM"
+function minutosParaTempo(minTotal) {
+    const h = Math.floor(minTotal / 60);
+    const m = minTotal % 60;
+    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+}
+
+async function carregarPaginaPublica() {
+    // 1. Carregar Serviços
     try {
         const querySnapshot = await getDocs(collection(db, "servicos"));
         if (modalServiceSelect) modalServiceSelect.innerHTML = '<option value="">Selecione o Serviço</option>';
         if (servicosCarrosselContainer) servicosCarrosselContainer.innerHTML = "";
+        servicosMapGlobal = {};
         
         if (!querySnapshot.empty) {
             let trackHTML = '<div class="servicos-carrossel-track" id="servicos-track">';
@@ -45,25 +57,33 @@ async function carregarPaginaPublica() {
 
             querySnapshot.forEach((docItem) => {
                 const s = docItem.data();
+                const servicoId = docItem.id;
                 const nomeServico = s.nome || "Serviço";
                 const descServico = s.descricao || "";
                 const precoServico = s.preco || "40.00";
+                const duracaoMinutos = Number(s.duracaoMinutos) || 30;
                 const imagemUrl = s.imagemUrl || 'https://via.placeholder.com/600x380';
                 
+                servicosMapGlobal[servicoId] = {
+                    nome: nomeServico,
+                    preco: precoServico,
+                    duracaoMinutos: duracaoMinutos
+                };
+
                 if (s.tempoCarrossel) tempoTransicao = Number(s.tempoCarrossel) * 1000;
 
                 trackHTML += `
-                    <div class="servicos-slide" data-id="${docItem.id}" data-nome="${nomeServico}" data-desc="${descServico}" data-preco="${precoServico}" data-img="${imagemUrl}">
+                    <div class="servicos-slide" data-id="${servicoId}">
                         <img src="${imagemUrl}" alt="${nomeServico}">
                         <div class="servicos-slide-caption">
-                            <h3>${nomeServico} - R$ ${precoServico}</h3>
+                            <h3>${nomeServico} - R$ ${precoServico} (${duracaoMinutos} min)</h3>
                             <p>Clique para ver detalhes</p>
                         </div>
                     </div>
                 `;
 
                 if (modalServiceSelect) {
-                    modalServiceSelect.innerHTML += `<option value="${docItem.id}">${nomeServico} - R$ ${precoServico}</option>`;
+                    modalServiceSelect.innerHTML += `<option value="${servicoId}">${nomeServico} - R$ ${precoServico} (${duracaoMinutos} min)</option>`;
                 }
             });
 
@@ -77,19 +97,44 @@ async function carregarPaginaPublica() {
         console.error("Erro ao carregar serviços:", e);
     }
 
-    // Carregar Barbeiros
+    // 2. Carregar Barbeiros (Primeiro passo do agendamento)
     try {
         const barbeirosSnap = await getDocs(collection(db, "barbeiros"));
-        if (modalBarberSelect) {
-            modalBarberSelect.innerHTML = '<option value="">Qualquer Barbeiro Disponível</option>';
+        if (barberSelectionContainer) {
+            barberSelectionContainer.innerHTML = "";
+            
+            if (barbeirosSnap.empty) {
+                barberSelectionContainer.innerHTML = "<p style='color:#888; text-align:center; grid-column:1/-1;'>Nenhum barbeiro registado. Cadastre no painel admin.</p>";
+                return;
+            }
+
             barbeirosSnap.forEach(docItem => {
                 const b = docItem.data();
-                modalBarberSelect.innerHTML += `<option value="${b.nome}">${b.nome}</option>`;
+                const nomeBarbeiro = b.nome || 'Barbeiro';
+
+                const card = document.createElement("div");
+                card.className = "barber-select-card";
+                card.innerHTML = `
+                    <h4>✂️ ${nomeBarbeiro}</h4>
+                    <p>${b.perfil === 'admin' ? 'Administrador / Barbeiro' : 'Barbeiro Autorizado'}</p>
+                `;
+
+                card.addEventListener("click", () => {
+                    document.querySelectorAll(".barber-select-card").forEach(c => c.classList.remove("selected"));
+                    card.classList.add("selected");
+                    barbeiroSelecionadoGlobal = nomeBarbeiro;
+                    if (calendarTitle) calendarTitle.textContent = `Agenda de ${nomeBarbeiro}`;
+                    if (calendarWrapper) calendarWrapper.style.display = "block";
+                    iniciarCalendarioTempoReal();
+                });
+
+                barberSelectionContainer.appendChild(card);
             });
         }
-    } catch (e) {}
+    } catch (e) {
+        console.error("Erro ao carregar barbeiros:", e);
+    }
 
-    iniciarCalendarioTempoReal();
     injetarSecaoGerenciarAgendamento();
 }
 
@@ -108,7 +153,6 @@ function iniciarLogicaCarrossel(tempoMs) {
     }, tempoMs);
 }
 
-// Fechar Modal
 if (btnCloseModal && modalBooking) {
     btnCloseModal.addEventListener("click", async () => {
         modalBooking.style.display = "none";
@@ -123,12 +167,21 @@ if (btnCloseModal && modalBooking) {
 }
 
 function iniciarCalendarioTempoReal() {
+    if (!barbeiroSelecionadoGlobal) return;
+
     try {
         onSnapshot(collection(db, "agendamentos"), (snapshotAgendamentos) => {
             horariosOcupadosGlobal = [];
             snapshotAgendamentos.forEach(doc => {
                 const data = doc.data();
-                if (data.status !== "Cancelado") horariosOcupadosGlobal.push(data.dataHora);
+                if (data.status !== "Cancelado" && data.barbeiroNome === barbeiroSelecionadoGlobal) {
+                    // Guarda o slot inicial e duração em minutos do serviço agendado
+                    let duracao = 30;
+                    if (data.servicoId && servicosMapGlobal[data.servicoId]) {
+                        duracao = servicosMapGlobal[data.servicoId].duracaoMinutos || 30;
+                    }
+                    horariosOcupadosGlobal.push({ dataHora: data.dataHora, duracao: duracao });
+                }
             });
 
             onSnapshot(collection(db, "bloqueiosTemporarios"), (snapshotBloqueios) => {
@@ -136,7 +189,9 @@ function iniciarCalendarioTempoReal() {
                 horariosBloqueadosGlobal = [];
                 snapshotBloqueios.forEach(doc => {
                     const b = doc.data();
-                    if (b.expiraEm && b.expiraEm > agora) horariosBloqueadosGlobal.push(b.dataHora);
+                    if (b.expiraEm && b.expiraEm > agora && b.barbeiroNome === barbeiroSelecionadoGlobal) {
+                        horariosBloqueadosGlobal.push(b.dataHora);
+                    }
                 });
                 construirColunasCalendario(horariosOcupadosGlobal, horariosBloqueadosGlobal);
             }, () => construirColunasCalendario(horariosOcupadosGlobal, []));
@@ -149,7 +204,33 @@ function iniciarCalendarioTempoReal() {
 function construirColunasCalendario(ocupados, bloqueados) {
     if (!scheduleColumnsContainer) return;
     scheduleColumnsContainer.innerHTML = "";
-    const horariosDisponiveis = ["09:00", "10:00", "11:00", "13:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+
+    // Horários de 15 em 15 minutos (excluindo almoço das 12:00 às 13:00)
+    const horariosDisponiveis = [
+        "09:00", "09:15", "09:30", "09:45",
+        "10:00", "10:15", "10:30", "10:45",
+        "11:00", "11:15", "11:30", "11:45",
+        "13:00", "13:15", "13:30", "13:45",
+        "14:00", "14:15", "14:30", "14:45",
+        "15:00", "15:15", "15:30", "15:45",
+        "16:00", "16:15", "16:30", "16:45",
+        "17:00", "17:15", "17:30", "17:45",
+        "18:00", "18:15", "18:30", "18:45",
+        "19:00"
+    ];
+
+    // Mapear todos os horários individuais que estão ocupados com base na duração dos serviços
+    const slotsOcupadosSet = new Set();
+    ocupados.forEach(item => {
+        const [dataYMD, horaHM] = item.dataHora.split('T');
+        if (!dataYMD || !horaHM) return;
+        const inicioMin = tempoParaMinutos(horaHM);
+        const slotsCount = Math.ceil(item.duracao / 15);
+        for (let s = 0; s < slotsCount; s++) {
+            const slotMin = inicioMin + (s * 15);
+            slotsOcupadosSet.add(`${dataYMD}T${minutosParaTempo(slotMin)}`);
+        }
+    });
 
     for (let i = 0; i < 5; i++) {
         const dataDia = new Date();
@@ -179,7 +260,7 @@ function construirColunasCalendario(ocupados, bloqueados) {
             btn.type = "button";
             btn.textContent = hora;
 
-            const isOcupado = ocupados.includes(dataHoraCompleta);
+            const isOcupado = slotsOcupadosSet.has(dataHoraCompleta);
             const isBloqueado = bloqueados.includes(dataHoraCompleta);
 
             if (isOcupado || isBloqueado) {
@@ -205,7 +286,7 @@ async function abrirModalReserva(dataHora) {
     const dataFormatadaAmigavel = `${dia}/${mes}/${ano} às ${horaParte}`;
 
     if (modalSelectedTimeLabel) {
-        modalSelectedTimeLabel.textContent = `Horário: ${dataFormatadaAmigavel}`;
+        modalSelectedTimeLabel.textContent = `Barbeiro: ${barbeiroSelecionadoGlobal} | ${dataFormatadaAmigavel}`;
     }
 
     if (modalBooking) modalBooking.style.display = "flex";
@@ -214,6 +295,7 @@ async function abrirModalReserva(dataHora) {
         const expiraEm = new Date().getTime() + 120000;
         const docRef = await addDoc(collection(db, "bloqueiosTemporarios"), {
             dataHora: dataHora,
+            barbeiroNome: barbeiroSelecionadoGlobal,
             expiraEm: expiraEm,
             criadoEm: serverTimestamp()
         });
@@ -229,17 +311,17 @@ if (modalBookingForm) {
         const clienteNome = document.getElementById("modal-client-name").value;
         const clienteTelefone = document.getElementById("modal-client-phone").value;
         const servicoId = modalServiceSelect.value;
-        const barbeiroNome = modalBarberSelect ? (modalBarberSelect.value || "Qualquer Barbeiro") : "Qualquer Barbeiro";
+        const barbeiroNome = barbeiroSelecionadoGlobal;
         const dataHora = horarioSelecionadoGlobal;
 
-        if (!dataHora) {
-            alert("Nenhum horário selecionado.");
+        if (!dataHora || !barbeiroNome) {
+            alert("Selecione o barbeiro e o horário.");
             return;
         }
 
         try {
             const codigoUnico = gerarCodigoUnico();
-            const agendamentoDocRef = doc(db, "agendamentos", dataHora);
+            const agendamentoDocRef = doc(db, "agendamentos", `${barbeiroNome}_${dataHora}`.replace(/[\s:]/g, '_'));
             
             await setDoc(agendamentoDocRef, {
                 clienteNome,
@@ -279,7 +361,7 @@ function mostrarModalSucessoAgendamento(codigo) {
     
     modal.innerHTML = `
         <div style="background:#141414; border:1px solid #d4af37; padding:30px; border-radius:12px; max-width:400px; text-align:center; color:#fff;">
-            <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado![cite: 6]</h3>
+            <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado!</h3>
             <p style="color:#ccc;">Guarde o seu <strong>Código Único</strong> para consultar ou cancelar:</p>
             <div style="background:#1a1a1a; border:2px dashed #d4af37; padding:15px; font-size:1.3rem; font-weight:bold; margin:15px 0; letter-spacing:1px; color:#d4af37;">${codigo}</div>
             <button id="btn-copiar-codigo" class="btn-primary-custom" style="width:100%; margin-bottom:10px; padding:12px;">Copiar Código</button>
