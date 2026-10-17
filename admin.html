@@ -15,7 +15,7 @@
         }
 
         #admin-panel {
-            display: block; /* Aberto diretamente sem ecrã de login */
+            display: block;
             padding: 20px;
             max-width: 1100px;
             margin: 0 auto;
@@ -89,7 +89,6 @@
 </head>
 <body>
 
-    <!-- PAINEL ADMINISTRATIVO DIRETO -->
     <div id="admin-panel">
         <div class="admin-header">
             <div style="display:flex; align-items:center; gap:12px;">
@@ -101,7 +100,7 @@
             </div>
         </div>
 
-        <!-- CADASTRO DE UTILIZADORES / BARBEIROS E PERMISSÕES -->
+        <!-- GERIR UTILIZADORES -->
         <div class="admin-section" id="section-barbeiros">
             <h3>Gerir Utilizadores / Barbeiros Autorizados</h3>
             <form id="barber-form">
@@ -119,12 +118,15 @@
             <div id="admin-barbers-list" style="margin-top: 15px;">A carregar utilizadores...</div>
         </div>
 
-        <!-- CADASTRO DE SERVIÇOS (COM IMAGEM, VALOR E TEMPO DO CARROSSEL) -->
+        <!-- GERIR SERVIÇOS (COM UPLOAD DE IMAGEM LOCAL) -->
         <div class="admin-section">
             <h3>Gerir Serviços (Carrossel Interativo)</h3>
             <form id="service-form">
                 <input type="text" id="serv-nome" placeholder="Nome do Serviço" required>
-                <input type="url" id="serv-img" placeholder="URL da Imagem do Serviço" required>
+                
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px;">Imagem do Serviço (Selecionar do Computador/Telemóvel):</label>
+                <input type="file" id="serv-img-file" accept="image/*" required>
+                
                 <input type="text" id="serv-preco" placeholder="Valor (Ex: 40.00)" required>
                 <textarea id="serv-desc" placeholder="Descrição detalhada do serviço" rows="3" required></textarea>
                 <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:10px;">Tempo de transição automática do carrossel (em segundos):</label>
@@ -134,7 +136,7 @@
             <div id="admin-services-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
-        <!-- CADASTRO DE PARCEIROS E VÍDEOS -->
+        <!-- GERIR PARCEIROS -->
         <div class="admin-section">
             <h3>Gerir Parceiros e Vídeos</h3>
             <form id="partner-form">
@@ -146,7 +148,7 @@
             <div id="admin-partners-list" style="margin-top: 15px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px;"></div>
         </div>
 
-        <!-- CADASTRO DE DESTAQUES -->
+        <!-- GERIR DESTAQUES -->
         <div class="admin-section">
             <h3>Gerir Destaques</h3>
             <form id="highlight-form">
@@ -165,7 +167,6 @@
         </div>
     </div>
 
-    <!-- Script Admin atualizado para carregar sem restrição de autenticação -->
     <script type="module" src="js/admin.js"></script>
 </body>
 </html>
