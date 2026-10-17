@@ -1,5 +1,5 @@
 import { db } from "./firebase-init.js";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 console.log("admin.js iniciado com sucesso!");
 
@@ -26,11 +26,26 @@ function converterImagemParaBase64(file) {
 
 function setupFormularioServico() {
     const serviceForm = document.getElementById("service-form");
+    const btnSubmitServico = document.getElementById("btn-submit-servico");
+    const btnCancelarServico = document.getElementById("btn-cancelar-servico");
+    const editIdInput = document.getElementById("serv-edit-id");
+
     if (!serviceForm) return;
+
+    if (btnCancelarServico) {
+        btnCancelarServico.onclick = () => {
+            serviceForm.reset();
+            editIdInput.value = "";
+            btnSubmitServico.textContent = "Adicionar Serviço";
+            btnCancelarServico.style.display = "none";
+            document.getElementById("serv-img-file").required = true;
+        };
+    }
 
     serviceForm.onsubmit = async (e) => {
         e.preventDefault();
         
+        const editId = editIdInput ? editIdInput.value.trim() : "";
         const nomeInput = document.getElementById("serv-nome");
         const fileInput = document.getElementById("serv-img-file");
         const precoInput = document.getElementById("serv-preco");
@@ -44,28 +59,55 @@ function setupFormularioServico() {
         const descricao = descInput ? descInput.value.trim() : "";
         const tempoCarrossel = tempoInput ? tempoInput.value : 4;
 
-        if (!fileInput || fileInput.files.length === 0) {
-            alert("Por favor, selecione uma imagem para o serviço.");
-            return;
-        }
-
         try {
-            const imagemUrl = await converterImagemParaBase64(fileInput.files[0]);
-            
-            await addDoc(collection(db, "servicos"), { 
-                nome: nome, 
-                imagemUrl: imagemUrl, 
-                preco: preco, 
-                duracaoMinutos: duracaoMinutos,
-                descricao: descricao, 
-                tempoCarrossel: tempoCarrossel 
-            });
+            let imagemUrl = "";
+            if (fileInput && fileInput.files.length > 0) {
+                imagemUrl = await converterImagemParaBase64(fileInput.files[0]);
+            }
 
-            alert("Serviço adicionado com sucesso!");
+            if (editId) {
+                // Atualizar serviço existente
+                const dadosAtualizados = {
+                    nome: nome,
+                    preco: preco,
+                    duracaoMinutos: duracaoMinutos,
+                    descricao: descricao,
+                    tempoCarrossel: tempoCarrossel
+                };
+                if (imagemUrl) {
+                    dadosAtualizados.imagemUrl = imagemUrl;
+                }
+
+                await updateDoc(doc(db, "servicos", editId), dadosAtualizados);
+                alert("Serviço atualizado com sucesso!");
+                
+                editIdInput.value = "";
+                btnSubmitServico.textContent = "Adicionar Serviço";
+                if (btnCancelarServico) btnCancelarServico.style.display = "none";
+                document.getElementById("serv-img-file").required = true;
+            } else {
+                // Adicionar novo serviço
+                if (!fileInput || fileInput.files.length === 0) {
+                    alert("Por favor, selecione uma imagem para o novo serviço.");
+                    return;
+                }
+
+                await addDoc(collection(db, "servicos"), { 
+                    nome: nome, 
+                    imagemUrl: imagemUrl, 
+                    preco: preco, 
+                    duracaoMinutos: duracaoMinutos,
+                    descricao: descricao, 
+                    tempoCarrossel: tempoCarrossel 
+                });
+
+                alert("Serviço adicionado com sucesso!");
+            }
+
             serviceForm.reset();
             carregarServicosAdmin();
         } catch (err) {
-            alert("Erro ao adicionar serviço: " + err.message);
+            alert("Erro ao salvar serviço: " + err.message);
         }
     };
 }
@@ -112,10 +154,12 @@ async function carregarServicosAdmin() {
 
         querySnapshot.forEach((docItem) => {
             const s = docItem.data();
+            const docId = docItem.id;
             const nomeServico = s.nome || "Serviço sem nome";
             const precoServico = s.preco || "0.00";
             const duracaoMinutos = s.duracaoMinutos || 30;
             const descServico = s.descricao || "";
+            const tempoCarrossel = s.tempoCarrossel || 4;
             const imagemServico = s.imagemUrl || 'https://via.placeholder.com/100';
 
             listContainer.innerHTML += `
@@ -123,10 +167,11 @@ async function carregarServicosAdmin() {
                     <img src="${imagemServico}" alt="${nomeServico}" style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc;">
                     <div style="flex:1;">
                         <h4 style="margin:0 0 5px 0; color:#1a1a1a;">${nomeServico} - <span style="color:#d4af37;">R$ ${precoServico}</span></h4>
-                        <p style="margin:0 0 5px 0; font-size:0.85rem; color:#444;"><strong>Duração:</strong> ${duracaoMinutos} min</p>
+                        <p style="margin:0 0 5px 0; font-size:0.85rem; color:#444;"><strong>Duração:</strong> ${duracaoMinutos} min | <strong>Carrossel:</strong> ${tempoCarrossel}s</p>
                         <p style="margin:0 0 8px 0; font-size:0.85rem; color:#666;">${descServico}</p>
                         <div style="display:flex; gap:8px;">
-                            <button class="btn-del-service" data-id="${docItem.id}" style="background:#dc3545; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
+                            <button class="btn-editar-servico" data-id="${docId}" data-nome="${encodeURIComponent(nomeServico)}" data-preco="${precoServico}" data-duracao="${duracaoMinutos}" data-desc="${encodeURIComponent(descServico)}" data-tempo="${tempoCarrossel}" style="background:#ffc107; color:#1a1a1a; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Editar</button>
+                            <button class="btn-del-service" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
                         </div>
                     </div>
                 </div>
@@ -144,6 +189,25 @@ async function carregarServicosAdmin() {
                         alert("Erro ao excluir serviço.");
                     }
                 }
+            });
+        });
+
+        document.querySelectorAll(".btn-editar-servico").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.getElementById("serv-edit-id").value = btn.getAttribute("data-id");
+                document.getElementById("serv-nome").value = decodeURIComponent(btn.getAttribute("data-nome"));
+                document.getElementById("serv-preco").value = btn.getAttribute("data-preco");
+                document.getElementById("serv-duracao").value = btn.getAttribute("data-duracao");
+                document.getElementById("serv-desc").value = decodeURIComponent(btn.getAttribute("data-desc"));
+                document.getElementById("serv-tempo").value = btn.getAttribute("data-tempo");
+
+                // Torna opcional a imagem ao editar
+                document.getElementById("serv-img-file").required = false;
+
+                document.getElementById("btn-submit-servico").textContent = "Atualizar Serviço";
+                document.getElementById("btn-cancelar-servico").style.display = "block";
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             });
         });
 
