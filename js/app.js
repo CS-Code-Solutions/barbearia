@@ -396,7 +396,7 @@ function mostrarModalSucessoAgendamento(codigo, dataHora) {
     
     modal.innerHTML = `
         <div style="background:white; padding:30px; border-radius:10px; max-width:400px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.3);">
-            <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado!</h3>
+            <h3 style="color:#28a745; margin-top:0;">Agendamento Confirmado![cite: 6]</h3>
             <p>Guarde o seu <strong>Código Único</strong> para consultar ou cancelar o seu horário:</p>
             <div style="background:#f8f9fa; border:2px dashed #d4af37; padding:15px; font-size:1.2rem; font-weight:bold; margin:15px 0; letter-spacing:1px; color:#1a1a1a;">${codigo}</div>
             <button id="btn-copiar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer; width:100%; margin-bottom:10px;">Copiar Código</button>
@@ -426,7 +426,7 @@ function injetarSecaoGerenciarAgendamento() {
     
     divGerenciar.innerHTML = `
         <h3 style="margin-top:0; color:#1a1a1a;">Já tem um agendamento?</h3>
-        <p style="color:#666; font-size:0.9rem;">Insira o seu <strong>Código Único</strong> para consultar ou cancelar:</p>
+        <p style="color:#666; font-size:0.9rem;">Insira o seu <strong>Código Único</strong> para consultar, reagendar ou cancelar:</p>
         <div style="display:flex; gap:10px; max-width:400px; margin:0 auto;">
             <input type="text" id="input-codigo-busca" placeholder="Ex: BARB-8X92" style="flex:1; padding:10px; border:1px solid #ccc; border-radius:5px;">
             <button id="btn-buscar-codigo" style="background:#1a1a1a; color:white; border:none; padding:10px 20px; border-radius:5px; font-weight:bold; cursor:pointer;">Consultar</button>
@@ -459,19 +459,46 @@ function injetarSecaoGerenciarAgendamento() {
             querySnapshot.forEach((docItem) => {
                 const agendamento = docItem.data();
                 const docId = docItem.id;
+                const dataHoraOriginal = agendamento.dataHora || '';
 
                 resultadoDiv.innerHTML = `
                     <div style="background:#f8f9fa; padding:15px; border-radius:8px; border:1px solid #ddd;">
                         <p><strong>Cliente:</strong> ${agendamento.clienteNome}</p>
                         <p><strong>Barbeiro:</strong> ${agendamento.barbeiroNome || 'Qualquer'}</p>
-                        <p><strong>Data/Hora Atual:</strong> ${agendamento.dataHora.replace('T', ' às ')}</p>
+                        <p><strong>Data/Hora Atual:</strong> ${dataHoraOriginal.replace('T', ' às ')}</p>
                         <p><strong>Estado:</strong> ${agendamento.status || 'Confirmado'}</p>
-                        <div style="display:flex; gap:10px; margin-top:10px;">
-                            <button id="btn-cancelar-reserva" style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; flex:1;">Cancelar Agendamento</button>
+                        
+                        <div style="margin-top:15px; border-top:1px solid #ccc; padding-top:10px;">
+                            <label style="font-size:0.9rem; font-weight:bold; display:block; margin-bottom:5px;">Escolha a nova data e horário para reagendar:</label>
+                            <input type="datetime-local" id="novo-horario-cliente-${docId}" value="${dataHoraOriginal}" style="width:100%; padding:8px; border:1px solid #ccc; border-radius:4px; margin-bottom:10px; box-sizing:border-box;">
+                            
+                            <div style="display:flex; gap:10px; flex-wrap:wrap;">
+                                <button id="btn-reagendar-reserva" style="background:#ffc107; color:#1a1a1a; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; flex:1;">Reagendar Horário</button>
+                                <button id="btn-cancelar-reserva" style="background:#dc3545; color:white; border:none; padding:8px 15px; border-radius:4px; cursor:pointer; font-weight:bold; flex:1;">Cancelar Agendamento</button>
+                            </div>
                         </div>
                     </div>
                 `;
 
+                // Botão de Reagendar
+                document.getElementById("btn-reagendar-reserva").addEventListener("click", async () => {
+                    const novoInput = document.getElementById(`novo-horario-cliente-${docId}`).value;
+                    if (!novoInput) {
+                        alert("Selecione a nova data e horário.");
+                        return;
+                    }
+
+                    try {
+                        await updateDoc(doc(db, "agendamentos", docId), { dataHora: novoInput });
+                        alert("Horário reagendado com sucesso!");
+                        resultadoDiv.innerHTML = "";
+                        carregarPaginaPublica();
+                    } catch (err) {
+                        alert("Erro ao reagendar: " + err.message);
+                    }
+                });
+
+                // Botão de Cancelar
                 document.getElementById("btn-cancelar-reserva").addEventListener("click", async () => {
                     if (confirm("Tem certeza que deseja cancelar este agendamento?")) {
                         await updateDoc(doc(db, "agendamentos", docId), { status: "Cancelado" });
