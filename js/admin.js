@@ -6,7 +6,6 @@ console.log("admin.js iniciado com sucesso!");
 document.addEventListener("DOMContentLoaded", () => {
     console.log("DOM totalmente carregado. A iniciar painel...");
     
-    // Força o carregamento direto
     carregarAgendamentosAdmin();
     carregarServicosAdmin();
     carregarParceirosAdmin();
@@ -45,14 +44,16 @@ async function carregarAgendamentosAdmin() {
                     <strong>Data/Hora:</strong> ${dataHoraTexto}<br>
                     <strong>Código:</strong> ${a.codigoUnico || 'N/A'}<br>
                     
-                    <div style="margin-top:10px; display:flex; gap:10px;">
-                        <input type="datetime-local" id="novo-dh-${docId}" value="${dataHoraOriginal}" style="padding:6px; border:1px solid #ccc; border-radius:4px; flex:1;">
-                        <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
+                    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+                        <input type="datetime-local" id="novo-dh-${docId}" value="${dataHoraOriginal}" style="padding:6px; border:1px solid #ccc; border-radius:4px; flex:1; min-width:200px;">
+                        <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
+                        <button class="btn-excluir-agendamento" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Excluir</button>
                     </div>
                 </div>
             `;
         });
 
+        // Evento para Alterar Horário
         document.querySelectorAll(".btn-editar-dh").forEach(btn => {
             btn.addEventListener("click", async () => {
                 const id = btn.getAttribute("data-id");
@@ -69,6 +70,22 @@ async function carregarAgendamentosAdmin() {
                     carregarAgendamentosAdmin();
                 } catch (err) {
                     alert("Erro ao atualizar horário: " + err.message);
+                }
+            });
+        });
+
+        // Evento para Excluir Agendamento
+        document.querySelectorAll(".btn-excluir-agendamento").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                const id = btn.getAttribute("data-id");
+                if (confirm("Deseja realmente excluir este agendamento?")) {
+                    try {
+                        await deleteDoc(doc(db, "agendamentos", id));
+                        alert("Agendamento excluído com sucesso!");
+                        carregarAgendamentosAdmin();
+                    } catch (err) {
+                        alert("Erro ao excluir agendamento: " + err.message);
+                    }
                 }
             });
         });
