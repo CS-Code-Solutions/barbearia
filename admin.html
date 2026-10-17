@@ -72,6 +72,22 @@
             border-radius: 4px;
             box-sizing: border-box;
         }
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            cursor: pointer;
+            font-size: 0.95rem;
+            user-select: none;
+            text-align: left;
+        }
+        .checkbox-container input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            margin: 0;
+            cursor: pointer;
+        }
         .btn-submit {
             background-color: #1a1a1a;
             color: white;
@@ -110,9 +126,12 @@
                     <option value="barbeiro">Barbeiro (Restrito)</option>
                     <option value="admin">Administrador (Acesso Total)</option>
                 </select>
-                <label style="display:block; margin:10px 0; font-size:0.9rem; cursor:pointer;">
-                    <input type="checkbox" id="barber-pode-editar" checked> Permitir edição de horários agendados
+                
+                <label class="checkbox-container">
+                    <input type="checkbox" id="barber-pode-editar" checked>
+                    Permitir edição de horários agendados
                 </label>
+
                 <button type="submit" class="btn-submit">Salvar Utilizador Autorizado</button>
             </form>
             <div id="admin-barbers-list" style="margin-top: 15px;">A carregar utilizadores...</div>
@@ -124,13 +143,13 @@
             <form id="service-form">
                 <input type="text" id="serv-nome" placeholder="Nome do Serviço" required>
                 
-                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px;">Imagem do Serviço:</label>
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px; text-align:left;">Imagem do Serviço:</label>
                 <input type="file" id="serv-img-file" accept="image/*" required>
                 
                 <input type="text" id="serv-preco" placeholder="Valor (Ex: 40.00)" required>
                 <textarea id="serv-desc" placeholder="Descrição detalhada do serviço" rows="3" required></textarea>
                 
-                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:10px;">Tempo de transição automática do carrossel (em segundos):</label>
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:10px; text-align:left;">Tempo de transição automática do carrossel (em segundos):</label>
                 <input type="number" id="serv-tempo" placeholder="Ex: 4 (Padrão: 4 segundos)" value="4" min="1" required>
                 
                 <button type="submit" class="btn-submit">Adicionar Serviço</button>
@@ -144,7 +163,7 @@
             <form id="partner-form">
                 <input type="text" id="part-nome" placeholder="Nome do Parceiro" required>
                 
-                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px;">Logótipo / Imagem do Parceiro:</label>
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px; text-align:left;">Logótipo / Imagem do Parceiro:</label>
                 <input type="file" id="part-logo-file" accept="image/*" required>
                 
                 <input type="url" id="part-video" placeholder="URL de Vídeo (Opcional - Link Embed do YouTube)">
@@ -159,7 +178,7 @@
             <form id="highlight-form">
                 <input type="text" id="high-titulo" placeholder="Título do Destaque" required>
                 
-                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px;">Imagem do Destaque:</label>
+                <label style="font-size:0.9rem; font-weight:bold; display:block; margin-top:5px; text-align:left;">Imagem do Destaque:</label>
                 <input type="file" id="high-img-file" accept="image/*" required>
                 
                 <textarea id="high-desc" placeholder="Descrição curta do destaque" rows="3" required></textarea>
