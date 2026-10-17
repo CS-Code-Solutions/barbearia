@@ -11,7 +11,115 @@ document.addEventListener("DOMContentLoaded", () => {
     carregarParceirosAdmin();
     carregarDestaquesAdmin();
     carregarBarbeirosAdmin();
+    setupFormularioServico();
 });
+
+// Função auxiliar para converter ficheiro em Base64
+function converterImagemParaBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result);
+        reader.onerror = error => reject(error);
+    });
+}
+
+function setupFormularioServico() {
+    const serviceForm = document.getElementById("service-form");
+    if (!serviceForm) return;
+
+    serviceForm.onsubmit = async (e) => {
+        e.preventDefault();
+        const nome = document.getElementById("serv-nome").value;
+        const fileInput = document.getElementById("serv-img-file");
+        const preco = document.getElementById("serv-preco").value;
+        const descricao = document.getElementById("serv-desc").value;
+        const tempoCarrossel = document.getElementById("serv-tempo").value || 4;
+
+        if (!fileInput || fileInput.files.length === 0) {
+            alert("Por favor, selecione uma imagem para o serviço.");
+            return;
+        }
+
+        try {
+            const imagemUrl = await converterImagemParaBase64(fileInput.files[0]);
+            await addDoc(collection(db, "servicos"), { nome, imagemUrl, preco, descricao, tempoCarrossel });
+            alert("Serviço adicionado com sucesso!");
+            serviceForm.reset();
+            carregarServicosAdmin();
+        } catch (err) {
+            alert("Erro ao adicionar serviço: " + err.message);
+        }
+    };
+}
+
+async function carregarServicosAdmin() {
+    const listContainer = document.getElementById("admin-services-list");
+    if (!listContainer) return;
+
+    try {
+        const querySnapshot = await getDocs(collection(db, "servicos"));
+        listContainer.innerHTML = "";
+
+        if (querySnapshot.empty) {
+            listContainer.innerHTML = "<p style='color:#666;'>Nenhum serviço registado.</p>";
+            return;
+        }
+
+        querySnapshot.forEach((docItem) => {
+            const s = docItem.data();
+            const nomeServico = s.nome || s.titulo || "Serviço sem nome";
+            const precoServico = s.preco || "0.00";
+            const descServico = s.descricao || "";
+            const imagemServico = s.imagemUrl || 'https://via.placeholder.com/100';
+
+            listContainer.innerHTML += `
+                <div style="background:#f8f9fa; padding:15px; border:1px solid #ddd; border-radius:8px; display:flex; align-items:center; gap:15px; text-align:left; margin-bottom:10px;">
+                    <img src="${imagemServico}" alt="${nomeServico}" style="width:80px; height:80px; object-fit:cover; border-radius:6px; border:1px solid #ccc;">
+                    <div style="flex:1;">
+                        <h4 style="margin:0 0 5px 0; color:#1a1a1a;">${nomeServico} - <span style="color:#d4af37;">R$ ${precoServico}</span></h4>
+                        <p style="margin:0 0 8px 0; font-size:0.85rem; color:#666;">${descServico}</p>
+                        <div style="display:flex; gap:8px;">
+                            <button class="btn-editar-servico" data-id="${docItem.id}" data-nome="${nomeServico}" data-preco="${precoServico}" data-desc="${descServico}" style="background:#ffc107; color:#1a1a1a; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Editar</button>
+                            <button class="btn-del-service" data-id="${docItem.id}" style="background:#dc3545; color:#fff; border:none; padding:5px 10px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        // Evento para Excluir Serviço
+        document.querySelectorAll(".btn-del-service").forEach(btn => {
+            btn.addEventListener("click", async () => {
+                if (confirm("Deseja excluir este serviço?")) {
+                    try {
+                        await deleteDoc(doc(db, "servicos", btn.getAttribute("data-id")));
+                        alert("Serviço excluído com sucesso!");
+                        carregarServicosAdmin();
+                    } catch (err) {
+                        alert("Erro ao excluir serviço.");
+                    }
+                }
+            });
+        });
+
+        // Evento para Editar Serviço (Preenche o formulário)
+        document.querySelectorAll(".btn-editar-servico").forEach(btn => {
+            btn.addEventListener("click", () => {
+                document.getElementById("serv-nome").value = btn.getAttribute("data-nome");
+                document.getElementById("serv-preco").value = btn.getAttribute("data-preco");
+                document.getElementById("serv-desc").value = btn.getAttribute("data-desc");
+
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                alert("Altere os dados no formulário acima. (Dica: Para atualizar a imagem, selecione o ficheiro novamente antes de salvar).");
+            });
+        });
+
+    } catch (e) {
+        console.error("Erro ao carregar serviços:", e);
+        listContainer.innerHTML = "<p style='color:red;'>Erro ao carregar serviços.</p>";
+    }
+}
 
 async function carregarAgendamentosAdmin() {
     const appContainer = document.getElementById("admin-appointments-list");
@@ -94,19 +202,6 @@ async function carregarAgendamentosAdmin() {
         console.error("Erro crítico ao carregar agendamentos:", e);
         appContainer.innerHTML = `<p style='color:red; font-weight:bold;'>Erro ao carregar agendamentos: ${e.message}</p>`;
     }
-}
-
-async function carregarServicosAdmin() {
-    const listContainer = document.getElementById("admin-services-list");
-    if (!listContainer) return;
-    try {
-        const querySnapshot = await getDocs(collection(db, "servicos"));
-        listContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum serviço registado.</p>" : "";
-        querySnapshot.forEach((docItem) => {
-            const s = docItem.data();
-            listContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${s.nome} - R$ ${s.preco}</h4></div>`;
-        });
-    } catch (e) { console.error(e); }
 }
 
 async function carregarParceirosAdmin() {
