@@ -25,6 +25,19 @@
             font-family: Georgia, serif;
             font-size: 2.5rem;
         }
+        .live-clock {
+            font-size: 1.4rem;
+            color: #fff;
+            background: #141414;
+            border: 1px solid #333;
+            display: inline-block;
+            padding: 8px 20px;
+            border-radius: 30px;
+            margin-top: 15px;
+            font-weight: bold;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
         .live-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
@@ -80,11 +93,29 @@
     <header>
         <h1>Agenda em Tempo Real</h1>
         <p style="color: #888; margin-top: 5px;">Acompanhamento de horários da barbearia</p>
+        <div id="live-clock" class="live-clock">A carregar relógio...</div>
     </header>
 
     <div id="live-appointments-container" class="live-grid">
         <p class="empty-msg">A carregar agendamentos em tempo real...</p>
     </div>
+
+    <script>
+        // Função do Relógio em Tempo Real
+        function atualizarRelogio() {
+            const agora = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
+            const dataStr = agora.toLocaleDateString('pt-BR', options);
+            const horaStr = agora.toLocaleTimeString('pt-BR');
+            
+            const relogioElemento = document.getElementById("live-clock");
+            if (relogioElemento) {
+                relogioElemento.textContent = `🕒 ${dataStr} - ${horaStr}`;
+            }
+        }
+        setInterval(atualizarRelogio, 1000);
+        atualizarRelogio();
+    </script>
 
     <script type="module">
         import { db } from "./js/firebase-init.js";
@@ -165,7 +196,6 @@
                         statusBadge = `<span class="badge-atendimento">EM ATENDIMENTO</span><br>`;
                     }
 
-                    // Substitui vírgulas por ' + ' caso existam
                     let servicosTexto = a.nomesServicos || 'Serviço Padrão';
                     servicosTexto = servicosTexto.replace(/,\s*/g, ' + ');
 
