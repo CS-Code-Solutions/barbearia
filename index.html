@@ -87,6 +87,7 @@
             align-items: center;
             max-width: 1200px;
             margin: 0 auto;
+            gap: 40px;
         }
         .hero-content {
             max-width: 600px;
@@ -144,6 +145,65 @@
         .hero-image-right img {
             width: 100%;
             height: auto;
+        }
+
+        /* Adaptação Responsiva para Telemóveis (Mobile) */
+        @media (max-width: 768px) {
+            .site-header {
+                padding: 1rem;
+            }
+            .header-left {
+                width: 100%;
+                justify-content: space-between;
+            }
+            .hamburger {
+                display: block;
+            }
+            .nav-links {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                width: 100%;
+                background-color: #0d0d0d;
+                padding: 20px 0;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+                text-align: center;
+                border-bottom: 1px solid #222;
+            }
+            .nav-links.active {
+                display: flex;
+            }
+            .nav-links a {
+                padding: 10px 0;
+                width: 100%;
+            }
+            .btn-header-agendar {
+                display: none; /* Oculta botão extra no header mobile para poupar espaço */
+            }
+
+            /* Logótipo em cima do texto no mobile */
+            .hero-section {
+                flex-direction: column-reverse;
+                text-align: center;
+                padding: 40px 15px;
+                gap: 30px;
+            }
+            .hero-content {
+                text-align: center;
+            }
+            .hero-title {
+                font-size: 2.3rem;
+            }
+            .hero-buttons {
+                justify-content: center;
+                flex-wrap: wrap;
+            }
+            .hero-image-right {
+                max-width: 280px;
+                margin: 0 auto;
+            }
         }
 
         .section {
@@ -352,7 +412,7 @@
                 <a href="#servicos" class="btn-outline-custom link-menu-servicos">Ver serviços</a>
             </div>
         </div>
-<div class="hero-image-right">
+        <div class="hero-image-right">
             <img src="logobar.png" alt="Logotipo Grande Barbearia Gomes" onerror="this.style.display='none'">
         </div>
     </section>
