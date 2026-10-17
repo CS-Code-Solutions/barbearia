@@ -201,6 +201,42 @@
             margin-bottom: 10px;
         }
         
+        /* Passo de Seleção de Barbeiro */
+        .barber-selection-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 25px;
+            margin-bottom: 25px;
+        }
+        .barber-select-card {
+            background: #1a1a1a;
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .barber-select-card:hover {
+            border-color: #d4af37;
+            background: #1f1f1f;
+        }
+        .barber-select-card.selected {
+            border-color: #d4af37;
+            background: #252215;
+        }
+        .barber-select-card h4 {
+            margin: 0;
+            color: #d4af37;
+            font-size: 1.1rem;
+        }
+        .barber-select-card p {
+            margin: 5px 0 0 0;
+            color: #888;
+            font-size: 0.85rem;
+        }
+
         /* Calendário colunas */
         .schedule-columns-container {
             display: flex;
@@ -213,7 +249,7 @@
             background: #181818;
             border: 1px solid #2c2c2c;
             border-radius: 12px;
-            min-width: 150px;
+            min-width: 160px;
             flex: 1;
             padding: 15px;
             text-align: center;
@@ -229,7 +265,7 @@
         .slots-list {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 8px;
         }
         .slot-btn {
             padding: 10px;
@@ -319,7 +355,7 @@
         }
         .modal-close:hover { color: #fff; }
 
-        /* Carrossel Vertical Estilo Instagram */
+        /* Carrossel Vertical */
         .servicos-carrossel-wrapper {
             position: relative;
             max-width: 380px;
@@ -396,7 +432,7 @@
         <div class="hero-content">
             <div class="hero-subtitle">BARBEARIA GOMES · DESDE A TRADIÇÃO</div>
             <h1 class="hero-title">O corte certo, no seu tempo.</h1>
-            <p class="hero-desc">Atendimento clássico, técnica moderna e um ambiente feito para você relaxar. Escolha o horário diretamente abaixo.</p>
+            <p class="hero-desc">Atendimento clássico, técnica moderna e um ambiente feito para você relaxar. Escolha o seu barbeiro e horário abaixo.</p>
             <div class="hero-buttons">
                 <a href="#agendar" class="btn-primary-custom">Escolher horário</a>
                 <a href="#servicos" class="btn-outline-custom link-menu-servicos">Ver serviços</a>
@@ -407,15 +443,23 @@
         </div>
     </section>
 
-    <!-- Seção de Agendamento por Horários -->
+    <!-- Seção de Agendamento com Escolha de Barbeiro Primeiro -->
     <section id="agendar" class="section bg-alt">
         <div class="container">
             <div class="booking-card">
                 <div style="text-align:center; color:#d4af37; font-size:0.75rem; letter-spacing:2px; text-transform:uppercase; font-weight:bold; margin-bottom:5px;">AGENDA ONLINE</div>
-                <h2>Selecione um Horário</h2>
-                <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom:20px;">Clique num horário disponível para abrir o formulário de reserva.</p>
+                <h2>Selecione o Barbeiro</h2>
+                <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom:15px;">Escolha com qual profissional deseja agendar para visualizar os horários disponíveis.</p>
                 
-                <div id="schedule-columns" class="schedule-columns-container"></div>
+                <div id="barber-selection-container" class="barber-selection-grid">
+                    <p style="color:#888; text-align:center; grid-column: 1/-1;">A carregar barbeiros...</p>
+                </div>
+
+                <div id="calendar-wrapper" style="display:none; margin-top:30px; border-top:1px solid #222; padding-top:25px;">
+                    <h3 id="calendar-title" style="text-align:center; color:#f4f4f4; font-family:Georgia, serif; margin-bottom:5px;">Horários Disponíveis</h3>
+                    <p style="text-align:center; color:#888; font-size:0.9rem; margin-bottom:20px;">Clique num horário disponível de 15 em 15 minutos.</p>
+                    <div id="schedule-columns" class="schedule-columns-container"></div>
+                </div>
             </div>
         </div>
     </section>
@@ -434,14 +478,9 @@
                 <label class="form-label-custom">WhatsApp / Telefone</label>
                 <input type="tel" id="modal-client-phone" placeholder="(00) 00000-0000" required>
 
-                <label class="form-label-custom">Serviço</label>
+                <label class="form-label-custom">Serviço (Define a duração na agenda)</label>
                 <select id="modal-service-select" required>
                     <option value="">Selecione o Serviço</option>
-                </select>
-
-                <label class="form-label-custom">Barbeiro</label>
-                <select id="modal-barber-select">
-                    <option value="">Qualquer Barbeiro Disponível</option>
                 </select>
 
                 <button type="submit" class="btn-primary-custom" style="width:100%; margin-top:25px; padding:14px; font-size:1rem;">Confirmar agendamento</button>
