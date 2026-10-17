@@ -24,17 +24,18 @@ onAuthStateChanged(auth, async (user) => {
             const barbeirosSnap = await getDocs(barbeirosRef);
             
             let autorizado = false;
-            let perfilUtilizador = "user";
-            let podeEditarGlobal = false;
+            let perfilUtilizador = "admin";
+            let podeEditarGlobal = true;
 
             barbeirosSnap.forEach(docItem => {
                 const b = docItem.data();
+                // Verifica se o e-mail está presente no documento (seja no campo 'email' ou num array)
                 if (b.email) {
                     const emailCadastrado = String(b.email).trim().toLowerCase();
                     if (emailCadastrado === emailUtilizador) {
                         autorizado = true;
-                        perfilUtilizador = b.perfil ? String(b.perfil).trim().toLowerCase() : "user";
-                        podeEditarGlobal = Boolean(b.podeEditar);
+                        perfilUtilizador = b.perfil ? String(b.perfil).trim().toLowerCase() : "admin";
+                        podeEditarGlobal = b.podeEditar !== undefined ? Boolean(b.podeEditar) : true;
                     }
                 }
             });
@@ -77,7 +78,7 @@ if (loginForm) {
     });
 }
 
-// Login com Conta Google via Redirecionamento (Evita bloqueio de pop-ups)
+// Login com Conta Google via Redirecionamento
 if (googleLoginBtn) {
     googleLoginBtn.addEventListener("click", async () => {
         const provider = new GoogleAuthProvider();
@@ -151,8 +152,8 @@ async function carregarBarbeirosAdmin(isAdmin) {
             listContainer.innerHTML += `
                 <div style="background:#f8f9fa; padding:10px; margin-bottom:6px; border-radius:4px; border:1px solid #ddd; display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <strong>${b.nome}</strong> (${b.email}) - <span style="text-transform:uppercase; font-size:0.8rem; background:#1a1a1a; color:white; padding:2px 6px; border-radius:3px;">${b.perfil || 'user'}</span><br>
-                        <small style="color:${b.podeEditar ? 'green' : 'red'};">${b.podeEditar ? '✔ Pode editar agendamentos' : '✖ Sem permissão de edição'}</small>
+                        <strong>${b.nome || 'Utilizador'}</strong> (${b.email}) - <span style="text-transform:uppercase; font-size:0.8rem; background:#1a1a1a; color:white; padding:2px 6px; border-radius:3px;">${b.perfil || 'admin'}</span><br>
+                        <small style="color:${b.podeEditar !== false ? 'green' : 'red'};">${b.podeEditar !== false ? '✔ Pode editar agendamentos' : '✖ Sem permissão de edição'}</small>
                     </div>
                     ${isAdmin ? `<button data-id="${docItem.id}" class="btn-del-barber" style="background:#dc3545; color:#fff; border:none; padding:4px 8px; border-radius:4px; cursor:pointer;">Excluir</button>` : ''}
                 </div>
