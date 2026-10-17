@@ -27,7 +27,7 @@
         }
         .live-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
             max-width: 1300px;
             margin: 0 auto;
@@ -39,18 +39,32 @@
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: 1px solid #222;
+            position: relative;
         }
         .live-card h3 {
             margin-top: 0;
             color: #d4af37;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             border-bottom: 1px solid #333;
             padding-bottom: 8px;
         }
         .live-card p {
             margin: 8px 0;
-            font-size: 1rem;
+            font-size: 0.95rem;
             color: #ccc;
+        }
+        .live-card strong {
+            color: #fff;
+        }
+        .badge-atendimento {
+            display: inline-block;
+            background: #ffc107;
+            color: #1a1a1a;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-bottom: 8px;
         }
         .empty-msg {
             text-align: center;
@@ -74,45 +88,124 @@
 
     <script type="module">
         import { db } from "./js/firebase-init.js";
-        import { collection, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { collection, getDocs, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
         const container = document.getElementById("live-appointments-container");
+        let servicosCache = {};
 
-        onSnapshot(collection(db, "agendamentos"), (snapshot) => {
-            container.innerHTML = "";
-
-            if (snapshot.empty) {
-                container.innerHTML = '<p class="empty-msg">Nenhum agendamento registado no momento.</p>';
-                return;
+        async function carregarCacheServicos() {
+            try {
+                const snap = await getDocs(collection(db, "servicos"));
+                snap.forEach(d => {
+                    servicosCache[d.id] = d.data();
+                });
+            } catch (e) {
+                console.error("Erro ao carregar serviços para cache:", e);
             }
+        }
 
-            snapshot.forEach((docItem) => {
-                const a = docItem.data();
-                if (a.status === "Cancelado") return;
+        function minutosParaTempo(minTotal) {
+            const h = Math.floor(minTotal / 60);
+            const m = minTotal % 60;
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
 
-                // Formatar data de AAAA-MM-DDTHH:MM para DD/MM/AAAA às HH:MM
-                let dataHoraTexto = 'Data não definida';
-                if (a.dataHora) {
-                    const partes = a.dataHora.split('T');
-                    if (partes.length === 2) {
-                        const [ano, mes, dia] = partes[0].split('-');
-                        dataHoraTexto = `${dia}/${mes}/${ano} às ${partes[1]}`;
-                    } else {
-                        dataHoraTexto = a.dataHora;
-                    }
+        function tempoParaMinutos(horaStr) {
+            const [h, m] = horaStr.split(':').map(Number);
+            return h * 60 + m;
+        }
+
+        async function iniciarTempoReal() {
+            await carregarCacheServicos();
+
+            onSnapshot(collection(db, "agendamentos"), (snapshot) => {
+                container.innerHTML = "";
+
+                if (snapshot.empty) {
+                    container.innerHTML = '<p class="empty-msg">Nenhum agendamento registado no momento.</p>';
+                    return;
                 }
 
-                container.innerHTML += `
-                    <div class="live-card">
-                        <h3>${dataHoraTexto}</h3>
-                        <p><strong>Cliente:</strong> ${a.clienteNome || 'Cliente'}</p>
-                        <p><strong>Telefone:</strong> ${a.clienteTelefone || 'N/A'}</p>
-                        <p><strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer Barbeiro'}</p>
-                        <p><strong>Código:</strong> <span style="color:#d4af37; font-weight:bold;">${a.codigoUnico || 'N/A'}</span></p>
-                    </div>
-                `;
+                const agora = new Date().getTime();
+                let ativos = [];
+
+                snapshot.forEach((docItem) => {
+                    const a = docItem.data();
+                    if (a.status === "Cancelado") return;
+
+                    const dataHoraOriginal = a.dataHora || '';
+                    if (!dataHoraOriginal) return;
+
+                    // Calcular duração total dos serviços
+                    let duracaoMin = 30;
+                    const listaServicos = a.servicosIds || (a.servicoId ? [a.servicoId] : []);
+                    if (listaServicos.length > 0) {
+                        duracaoMin = 0;
+                        listaServicos.forEach(sId => {
+                            if (servicosCache[sId]) {
+                                duracaoMin += Number(servicosCache[sId].duracaoMinutos) || 30;
+                            }
+                        });
+                    }
+                    if (duracaoMin === 0) duracaoMin = Number(a.duracaoTotal) || 30;
+
+                    const [dataYMD, horaInicio] = dataHoraOriginal.split('T');
+                    if (!dataYMD || !horaInicio) return;
+
+                    const inicioMin = tempoParaMinutos(horaInicio);
+                    const fimMin = inicioMin + duracaoMin;
+                    const horaFim = minutosParaTempo(fimMin);
+
+                    const inicioMs = new Date(dataHoraOriginal).getTime();
+                    const fimMs = inicioMs + (duracaoMin * 60000);
+
+                    // Se o horário final já passou, é considerado concluído e sai automaticamente da tela
+                    if (agora > fimMs) return;
+
+                    let statusBadge = "";
+                    if (agora >= inicioMs && agora <= fimMs) {
+                        statusBadge = `<span class="badge-atendimento">EM ATENDIMENTO</span><br>`;
+                    }
+
+                    const servicosTexto = a.nomesServicos || 'Serviço Padrão';
+
+                    ativos.push({
+                        dataYMD,
+                        horaInicio,
+                        horaFim,
+                        clienteNome: a.clienteNome || 'Cliente',
+                        clienteTelefone: a.clienteTelefone || 'N/A',
+                        barbeiroNome: a.barbeiroNome || 'Qualquer Barbeiro',
+                        servicosTexto,
+                        duracaoMin,
+                        statusBadge
+                    });
+                });
+
+                if (ativos.length === 0) {
+                    container.innerHTML = '<p class="empty-msg">Nenhum agendamento ativo no momento.</p>';
+                    return;
+                }
+
+                ativos.forEach(a => {
+                    const [ano, mes, dia] = a.dataYMD.split('-');
+                    const dataFormatada = `${dia}/${mes}/${ano}`;
+
+                    container.innerHTML += `
+                        <div class="live-card">
+                            ${a.statusBadge}
+                            <h3>${dataFormatada} · ${a.horaInicio} às ${a.horaFim}</h3>
+                            <p><strong>Cliente:</strong> ${a.clienteNome}</p>
+                            <p><strong>Telefone:</strong> ${a.clienteTelefone}</p>
+                            <p><strong>Barbeiro:</strong> ${a.barbeiroNome}</p>
+                            <p><strong>Serviço(s):</strong> ${a.servicosTexto} (${a.duracaoMin} min)</p>
+                        </div>
+                    `;
+                });
             });
-        });
+        }
+
+        iniciarTempoReal();
     </script>
 </body>
 </html>
