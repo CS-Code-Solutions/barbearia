@@ -3,17 +3,39 @@ import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "https://
 
 console.log("admin.js iniciado com sucesso!");
 
-document.addEventListener("DOMContentLoaded", () => {
+let agendamentosCacheGlobal = [];
+let servicosCacheAdmin = {};
+
+document.addEventListener("DOMContentLoaded", async () => {
     console.log("DOM totalmente carregado. A iniciar painel...");
     
+    await carregarCacheServicos();
+    await carregarBarbeirosAdmin();
     carregarAgendamentosAdmin();
-    carregarServicosAdmin();
     carregarParceirosAdmin();
     carregarDestaquesAdmin();
-    carregarBarbeirosAdmin();
     setupFormularioServico();
     setupFormularioBarbeiro();
+    
+    const filtroBarbeiroSelect = document.getElementById("filtro-barbeiro-admin");
+    if (filtroBarbeiroSelect) {
+        filtroBarbeiroSelect.addEventListener("change", () => {
+            renderizarListaAgendamentos(agendamentosCacheGlobal);
+        });
+    }
 });
+
+async function carregarCacheServicos() {
+    try {
+        const snap = await getDocs(collection(db, "servicos"));
+        servicosCacheAdmin = {};
+        snap.forEach(d => {
+            servicosCacheAdmin[d.id] = d.data();
+        });
+    } catch (e) {
+        console.error("Erro ao carregar serviços:", e);
+    }
+}
 
 function converterImagemParaBase64(file) {
     return new Promise((resolve, reject) => {
@@ -103,6 +125,7 @@ function setupFormularioServico() {
             }
 
             serviceForm.reset();
+            await carregarCacheServicos();
             carregarServicosAdmin();
         } catch (err) {
             alert("Erro ao salvar serviço: " + err.message);
@@ -182,6 +205,7 @@ async function carregarServicosAdmin() {
                     try {
                         await deleteDoc(doc(db, "servicos", btn.getAttribute("data-id")));
                         alert("Serviço excluído com sucesso!");
+                        await carregarCacheServicos();
                         carregarServicosAdmin();
                     } catch (err) {
                         alert("Erro ao excluir serviço.");
@@ -221,155 +245,78 @@ async function carregarAgendamentosAdmin() {
 
     try {
         const querySnapshot = await getDocs(collection(db, "agendamentos"));
-        appContainer.innerHTML = "";
-
-        if (querySnapshot.empty) {
-            appContainer.innerHTML = "<p style='color:#666;'>Nenhum agendamento registado na base de dados.</p>";
-            return;
-        }
+        agendamentosCacheGlobal = [];
 
         querySnapshot.forEach((docItem) => {
-            const a = docItem.data();
-            const docId = docItem.id;
-            const dataHoraOriginal = a.dataHora || '';
-            const servicosTexto = a.nomesServicos || 'Serviço';
-            
-            let dataHoraTexto = 'Data não definida';
-            if (dataHoraOriginal) {
-                const partes = dataHoraOriginal.split('T');
-                if (partes.length === 2) {
-                    const [ano, mes, dia] = partes[0].split('-');
-                    dataHoraTexto = `${dia}/${mes}/${ano} às ${partes[1]}`;
-                } else {
-                    dataHoraTexto = dataHoraOriginal;
-                }
-            }
-
-            appContainer.innerHTML += `
-                <div style="background:#fff; border-left: 4px solid #d4af37; padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #1a1a1a;" id="agendamento-${docId}">
-                    <p style="margin: 4px 0;"><strong>Cliente:</strong> ${a.clienteNome || 'Cliente'} (${a.clienteTelefone || ''})</p>
-                    <p style="margin: 4px 0;"><strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer'}</p>
-                    <p style="margin: 4px 0;"><strong>Serviço(s):</strong> ${servicosTexto}</p>
-                    <p style="margin: 4px 0;"><strong>Data/Hora:</strong> ${dataHoraTexto}</p>
-                    <p style="margin: 4px 0;"><strong>Código:</strong> <span style="color:#b8860b; font-weight:bold;">${a.codigoUnico || 'N/A'}</span></p>
-                    
-                    <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                        <input type="datetime-local" id="novo-dh-${docId}" value="${dataHoraOriginal}" style="padding:8px; border:1px solid #ccc; border-radius:4px; flex:1; min-width:200px; background:#fff; color:#1a1a1a;">
-                        <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
-                        <button class="btn-excluir-agendamento" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Excluir</button>
-                    </div>
-                </div>
-            `;
+            agendamentosCacheGlobal.push({ id: docItem.id, ...docItem.data() });
         });
 
-        document.querySelectorAll(".btn-editar-dh").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const id = btn.getAttribute("data-id");
-                const novoInput = document.getElementById(`novo-dh-${id}`).value;
-                if (!novoInput) { alert("Selecione a nova data e horário."); return; }
-
-                try {
-                    await updateDoc(doc(db, "agendamentos", id), { dataHora: novoInput });
-                    alert("Horário reagendado com sucesso!");
-                    carregarAgendamentosAdmin();
-                } catch (err) { alert("Erro ao atualizar horário: " + err.message); }
-            });
-        });
-
-        document.querySelectorAll(".btn-excluir-agendamento").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                const id = btn.getAttribute("data-id");
-                if (confirm("Deseja realmente excluir este agendamento?")) {
-                    try {
-                        await deleteDoc(doc(db, "agendamentos", id));
-                        alert("Agendamento excluído com sucesso!");
-                        carregarAgendamentosAdmin();
-                    } catch (err) { alert("Erro ao excluir agendamento: " + err.message); }
-                }
-            });
-        });
-
+        renderizarListaAgendamentos(agendamentosCacheGlobal);
     } catch (e) {
         appContainer.innerHTML = `<p style='color:red;'>Erro ao carregar agendamentos: ${e.message}</p>`;
     }
 }
 
-async function carregarParceirosAdmin() {
-    const partContainer = document.getElementById("admin-partners-list");
-    if (!partContainer) return;
-    try {
-        const querySnapshot = await getDocs(collection(db, "parceiros"));
-        partContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum parceiro registado.</p>" : "";
-        querySnapshot.forEach((docItem) => {
-            const p = docItem.data();
-            partContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${p.nome}</h4></div>`;
-        });
-    } catch (e) { console.error(e); }
-}
+function renderizarListaAgendamentos(lista) {
+    const appContainer = document.getElementById("admin-appointments-list");
+    const filtroBarbeiro = document.getElementById("filtro-barbeiro-admin")?.value || "";
+    if (!appContainer) return;
 
-async function carregarDestaquesAdmin() {
-    const highContainer = document.getElementById("admin-highlights-list");
-    if (!highContainer) return;
-    try {
-        const querySnapshot = await getDocs(collection(db, "destaques"));
-        highContainer.innerHTML = querySnapshot.empty ? "<p style='color:#666;'>Nenhum destaque registado.</p>" : "";
-        querySnapshot.forEach((docItem) => {
-            const d = docItem.data();
-            highContainer.innerHTML += `<div style="background:#f8f9fa; padding:12px; border:1px solid #ddd; border-radius:6px; text-align:center;"><h4>${d.titulo}</h4></div>`;
-        });
-    } catch (e) { console.error(e); }
-}
+    appContainer.innerHTML = "";
 
-async function carregarBarbeirosAdmin() {
-    const listContainer = document.getElementById("admin-barbers-list");
-    if (!listContainer) return;
-    
-    try {
-        const querySnapshot = await getDocs(collection(db, "barbeiros"));
-        listContainer.innerHTML = "";
+    const agora = new Date().getTime();
+    let listaFiltrada = [];
 
-        if (querySnapshot.empty) {
-            listContainer.innerHTML = "<p style='color:#888; font-size:0.9rem;'>Nenhum utilizador registado.</p>";
-            return;
-        }
+    lista.forEach(a => {
+        if (a.status === "Cancelado") return;
 
-        querySnapshot.forEach((docItem) => {
-            const b = docItem.data();
-            const docId = docItem.id;
-            const nomeBarbeiro = b.nome || 'Utilizador';
-            const emailBarbeiro = b.email || '';
-            const perfilBarbeiro = b.perfil || 'barbeiro';
-            const podeEditar = b.podeEditar !== false;
+        const dataHoraOriginal = a.dataHora || '';
+        if (!dataHoraOriginal) return;
 
-            listContainer.innerHTML += `
-                <div style="background:#1a1a1a; padding:15px; border:1px solid #333; border-radius:8px; display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; color:#fff;">
-                    <div>
-                        <h4 style="margin:0 0 5px 0; color:#d4af37;">${nomeBarbeiro} <span style="font-size:0.8rem; color:#aaa; font-weight:normal;">(${perfilBarbeiro})</span></h4>
-                        <p style="margin:0; font-size:0.85rem; color:#888;">${emailBarbeiro} | Edição permitida: ${podeEditar ? 'Sim' : 'Não'}</p>
-                    </div>
-                    <div style="display:flex; gap:8px;">
-                        <button class="btn-del-barbeiro" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-weight:bold; cursor:pointer; font-size:0.8rem;">Excluir</button>
-                    </div>
-                </div>
-            `;
-        });
-
-        document.querySelectorAll(".btn-del-barbeiro").forEach(btn => {
-            btn.addEventListener("click", async () => {
-                if (confirm("Deseja excluir este utilizador autorizado?")) {
-                    try {
-                        await deleteDoc(doc(db, "barbeiros", btn.getAttribute("data-id")));
-                        alert("Utilizador excluído com sucesso!");
-                        carregarBarbeirosAdmin();
-                    } catch (err) {
-                        alert("Erro ao excluir utilizador: " + err.message);
-                    }
+        // Calcular duração total
+        let duracaoMin = 30;
+        const listaServicos = a.servicosIds || (a.servicoId ? [a.servicoId] : []);
+        if (listaServicos.length > 0) {
+            duracaoMin = 0;
+            listaServicos.forEach(sId => {
+                if (servicosCacheAdmin[sId]) {
+                    duracaoMin += Number(servicosCacheAdmin[sId].duracaoMinutos) || 30;
                 }
             });
-        });
+        }
+        if (duracaoMin === 0) duracaoMin = Number(a.duracaoTotal) || 30;
 
-    } catch (e) {
-        console.error("Erro ao carregar barbeiros:", e);
-        listContainer.innerHTML = "<p style='color:red;'>Erro ao carregar utilizadores.</p>";
+        const inicioMs = new Date(dataHoraOriginal).getTime();
+        const fimMs = inicioMs + (duracaoMin * 60000);
+
+        // Se o horário final já passou, está concluído e sai da tela
+        if (agora > fimMs) return;
+
+        // Verificar filtro por barbeiro
+        if (filtroBarbeiro && a.barbeiroNome !== filtroBarbeiro) return;
+
+        // Determinar status dinâmico ("Em atendimento" ou "Confirmado")
+        let statusDinamico = "Confirmado";
+        let statusBadgeStyle = "background: #28a745; color: white;";
+        
+        if (agora >= inicioMs && agora <= fimMs) {
+            statusDinamico = "Em atendimento";
+            statusBadgeStyle = "background: #ffc107; color: #1a1a1a; font-weight: bold; animation: pulse 1.5s infinite;";
+        }
+
+        listaFiltrada.push({ ...a, statusDinamico, statusBadgeStyle, dataHoraOriginal });
+    });
+
+    if (listaFiltrada.length === 0) {
+        appContainer.innerHTML = "<p style='color:#666;'>Nenhum agendamento ativo no momento.</p>";
+        return;
     }
-}
+
+    listaFiltrada.forEach(a => {
+        const docId = a.id;
+        const dataHoraOriginal = a.dataHoraOriginal;
+        const servicosTexto = a.nomesServicos || 'Serviço';
+        
+        let dataHoraTexto = 'Data não definida';
+        if (dataHoraOriginal) {
+            const partes = dataHoraOriginal.split
