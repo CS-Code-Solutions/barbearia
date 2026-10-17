@@ -212,7 +212,9 @@ function construirColunasCalendario(ocupados, bloqueados) {
     if (!scheduleColumnsContainer) return;
     scheduleColumnsContainer.innerHTML = "";
 
-    const horariosDisponiveis = [
+    const agora = new Date();
+
+    const slotsBase = [
         "09:00", "09:15", "09:30", "09:45",
         "10:00", "10:15", "10:30", "10:45",
         "11:00", "11:15", "11:30", "11:45",
@@ -222,7 +224,8 @@ function construirColunasCalendario(ocupados, bloqueados) {
         "16:00", "16:15", "16:30", "16:45",
         "17:00", "17:15", "17:30", "17:45",
         "18:00", "18:15", "18:30", "18:45",
-        "19:00"
+        "19:00", "19:15", "19:30", "19:45",
+        "20:00", "20:15", "20:30", "20:45"
     ];
 
     const slotsOcupadosSet = new Set();
@@ -246,6 +249,14 @@ function construirColunasCalendario(ocupados, bloqueados) {
         const dia = String(dataDia.getDate()).padStart(2, '0');
         const dataFormatadaYMD = `${ano}-${mes}-${dia}`;
         
+        const diaSemanaIndex = dataDia.getDay(); // 0 = Domingo, 1 = Segunda, ..., 6 = Sábado
+
+        // Domingo está fechado
+        if (diaSemanaIndex === 0) continue;
+
+        // Limite de fecho: Segunda a Sexta até 21:00 | Sábado até 19:00
+        const horaFechoLimite = diaSemanaIndex === 6 ? 19 * 60 : 21 * 60;
+
         const nomeDiaSemana = dataDia.toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'numeric' });
 
         const column = document.createElement("div");
@@ -259,16 +270,27 @@ function construirColunasCalendario(ocupados, bloqueados) {
         const list = document.createElement("div");
         list.className = "slots-list";
 
-        horariosDisponiveis.forEach(hora => {
+        let slotsAdicionados = 0;
+
+        slotsBase.forEach(hora => {
+            const horaMinutos = tempoParaMinutos(hora);
+
+            // Excluir horários fora do expediente ou durante o almoço (12:00 às 13:00)
+            if (horaMinutos >= horaFechoLimite) return;
+            if (horaMinutos >= 12 * 60 && horaMinutos < 13 * 60) return;
+
             const dataHoraCompleta = `${dataFormatadaYMD}T${hora}`;
+            const dataHoraSlotObj = new Date(`${dataFormatadaYMD}T${hora}:00`);
+
             const btn = document.createElement("button");
             btn.type = "button";
             btn.textContent = hora;
 
+            const isPassado = dataHoraSlotObj.getTime() <= agora.getTime();
             const isOcupado = slotsOcupadosSet.has(dataHoraCompleta);
             const isBloqueado = bloqueados.includes(dataHoraCompleta);
 
-            if (isOcupado || isBloqueado) {
+            if (isPassado || isOcupado || isBloqueado) {
                 btn.className = "slot-btn busy";
                 btn.disabled = true;
             } else {
@@ -277,10 +299,13 @@ function construirColunasCalendario(ocupados, bloqueados) {
             }
 
             list.appendChild(btn);
+            slotsAdicionados++;
         });
 
-        column.appendChild(list);
-        scheduleColumnsContainer.appendChild(column);
+        if (slotsAdicionados > 0) {
+            column.appendChild(list);
+            scheduleColumnsContainer.appendChild(column);
+        }
     }
 }
 
@@ -438,7 +463,6 @@ function injetarSecaoGerenciarAgendamento() {
         resultadoDiv.innerHTML = "<p style='color:#d4af37; text-align:center;'>A procurar agendamento...</p>";
 
         try {
-            // Buscar regras de cancelamento e reagendamento
             const regrasSnap = await getDoc(doc(db, "configuracoes", "regras"));
             const regras = regrasSnap.exists() ? regrasSnap.data() : { horasCancelar: 2, horasReagendar: 2, whatsappSuporte: "" };
             const whatsappNum = regras.whatsappSuporte || "5511999999999";
