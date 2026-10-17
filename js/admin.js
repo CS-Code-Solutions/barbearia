@@ -159,20 +159,21 @@ async function carregarAgendamentosAdmin() {
             const dataHoraOriginal = a.dataHora || '';
             const dataHoraTexto = dataHoraOriginal ? dataHoraOriginal.replace('T', ' às ') : 'Data não definida';
 
-            appContainer.innerHTML += `
-                <div style="background:#fff; border-left: 4px solid #d4af37; padding: 12px; margin-bottom: 10px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);" id="agendamento-${docId}">
-                    <strong>Cliente:</strong> ${a.clienteNome || 'Cliente'} (${a.clienteTelefone || ''})<br>
-                    <strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer'} <br>
-                    <strong>Data/Hora:</strong> ${dataHoraTexto}<br>
-                    <strong>Código:</strong> ${a.codigoUnico || 'N/A'}<br>
-                    
-                    <div style="margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
-                        <input type="datetime-local" id="novo-dh-${docId}" value="${dataHoraOriginal}" style="padding:6px; border:1px solid #ccc; border-radius:4px; flex:1; min-width:200px;">
-                        <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
-                        <button class="btn-excluir-agendamento" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Excluir</button>
-                    </div>
-                </div>
-            `;
+// Substitua esta parte dentro do forEach da função carregarAgendamentosAdmin em js/admin.js:
+appContainer.innerHTML += `
+    <div style="background:#fff; border-left: 4px solid #d4af37; padding: 15px; margin-bottom: 15px; border-radius: 6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); color: #1a1a1a;" id="agendamento-${docId}">
+        <p style="margin: 4px 0;"><strong>Cliente:</strong> ${a.clienteNome || 'Cliente'} (${a.clienteTelefone || ''})</p>
+        <p style="margin: 4px 0;"><strong>Barbeiro:</strong> ${a.barbeiroNome || 'Qualquer'}</p>
+        <p style="margin: 4px 0;"><strong>Data/Hora:</strong> ${dataHoraTexto}</p>
+        <p style="margin: 4px 0;"><strong>Código:</strong> <span style="color:#b8860b; font-weight:bold;">${a.codigoUnico || 'N/A'}</span></p>
+        
+        <div style="margin-top:12px; display:flex; gap:10px; flex-wrap:wrap; align-items:center;">
+            <input type="datetime-local" id="novo-dh-${docId}" value="${dataHoraOriginal}" style="padding:8px; border:1px solid #ccc; border-radius:4px; flex:1; min-width:200px; background:#fff; color:#1a1a1a;">
+            <button class="btn-editar-dh" data-id="${docId}" style="background:#ffc107; color:#1a1a1a; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Alterar Horário</button>
+            <button class="btn-excluir-agendamento" data-id="${docId}" style="background:#dc3545; color:#fff; border:none; padding:8px 12px; border-radius:4px; font-weight:bold; cursor:pointer;">Excluir</button>
+        </div>
+    </div>
+`;
         });
 
         // Evento para Alterar Horário
